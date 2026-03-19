@@ -1,0 +1,60 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(CONSUMER)
+  createdAt DateTime @default(now())
+}
+
+model Vehicle {
+  id        String   @id @default(uuid())
+  reg       String
+  make      String
+  model     String
+  year      Int
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id        String      @id @default(uuid())
+  userId    String
+  vehicleId String
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+}
+
+model Report {
+  id        String   @id @default(uuid())
+  orderId   String
+  data      Json
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  CONSUMER
+  DEALER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  reg       String
+  status    String
+  createdAt DateTime @default(now())
+}
