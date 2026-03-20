@@ -70,78 +70,74 @@
 
   <!-- ⚙️ SCRIPT -->
   <script>
-    async function checkVehicle() {
-      const reg = document.getElementById('reg').value;
+async function checkVehicle() {
+  const reg = document.getElementById('reg').value;
 
-      const res = await fetch('https://vehicle-history-backend-production.up.railway.app/api/v1/vehicle/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ registration: reg })
-      });
+  // ✅ show loading
+  document.getElementById("result").innerHTML = "Loading...";
 
-      const data = await res.json();
+  try {
+    const res = await fetch('https://vehicle-history-backend-production.up.railway.app/api/v1/vehicle/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ registration: reg })
+    });
 
-      if (data.error) {
-        alert("Invalid registration");
-        return;
-      }
+    const data = await res.json();
 
-      document.getElementById("result").innerHTML = `
-        <div style="
-          padding:20px;
-          border-radius:12px;
-          background:white;
-          box-shadow:0 2px 10px rgba(0,0,0,0.1);
-        ">
-          <h2>🚗 ${data.make} (${data.year})</h2>
+    if (data.error) {
+      alert("Invalid registration");
+      return;
+    }
 
-          <p><strong>Fuel:</strong> ${data.fuel}</p>
-          <p><strong>Colour:</strong> ${data.colour}</p>
-          <p><strong>MOT:</strong> 
-            <span style="color:green;">${data.motStatus}</span>
-          </p>
+    // ✅ render UI
+    document.getElementById("result").innerHTML = `
+      <div style="
+        padding:20px;
+        border-radius:12px;
+        background:white;
+        box-shadow:0 2px 10px rgba(0,0,0,0.1);
+      ">
+        <h2>🚗 ${data.make} (${data.year})</h2>
 
-          <hr>
+        <p><strong>Fuel:</strong> ${data.fuel}</p>
+        <p><strong>Colour:</strong> ${data.colour}</p>
+        <p><strong>MOT:</strong> 
+          <span style="color:green;">${data.motStatus}</span>
+        </p>
 
-          <h3>🔒 Premium Checks</h3>
+        <hr>
 
-          <div style="opacity:0.6;">
-            <p>⚠️ Outstanding Finance</p>
-            <p>⚠️ Stolen Check</p>
-            <p>⚠️ Write-off History</p>
-          </div>
+        <h3>🔒 Premium Checks</h3>
 
-          <button onclick="pay('${reg}')" style="
-            margin-top:15px;
-            width:100%;
-            padding:12px;
-            background:black;
-            color:white;
-            border:none;
-            border-radius:8px;
-            font-size:16px;
-            cursor:pointer;
-          ">
-            🔓 Unlock Full Report (£4.99)
-          </button>
+        <div style="opacity:0.6;">
+          <p>⚠️ Outstanding Finance</p>
+          <p>⚠️ Stolen Check</p>
+          <p>⚠️ Write-off History</p>
         </div>
-      `;
-    }
 
-    async function pay(reg) {
-      const res = await fetch('https://vehicle-history-backend-production.up.railway.app/api/v1/payment/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reg })
-      });
+        <button onclick="pay('${reg}')" style="
+          margin-top:15px;
+          width:100%;
+          padding:12px;
+          background:black;
+          color:white;
+          border:none;
+          border-radius:8px;
+          font-size:16px;
+          cursor:pointer;
+        ">
+          🔓 Unlock Full Report (£4.99)
+        </button>
+      </div>
+    `;
 
-      const data = await res.json();
-
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    }
-  </script>
+  } catch (err) {
+    alert("Server error. Try again.");
+    console.error(err);
+  }
+}
+</script>
 
 </body>
 </html>
