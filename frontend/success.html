@@ -20,6 +20,9 @@
   </div>
 
   <script>
+    // 🔴 IMPORTANT: REPLACE THIS WITH YOUR RAILWAY URL
+    const API_BASE = "https://vehicle-history-backend-production.up.railway.app";
+
     async function loadReport() {
       const urlParams = new URLSearchParams(window.location.search);
       const sessionId = urlParams.get('session_id');
@@ -29,90 +32,81 @@
         return;
       }
 
-      // Get reg
-      const res1 = await fetch(`http://localhost:3001/api/v1/payment/success?session_id=${sessionId}`);
-      const sessionData = await res1.json();
+      try {
+        // ✅ Step 1: Get registration from backend
+        const res1 = await fetch(`${API_BASE}/api/v1/payment/success?session_id=${sessionId}`);
+        const sessionData = await res1.json();
 
-      if (!sessionData.reg) {
-        document.getElementById("report").innerHTML = "❌ No registration found";
-        return;
+        if (!sessionData.reg) {
+          document.getElementById("report").innerHTML = "❌ No registration found";
+          return;
+        }
+
+        const reg = sessionData.reg;
+
+        // ✅ Step 2: Fetch vehicle data
+        const res2 = await fetch(`${API_BASE}/api/v1/vehicle/preview`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ registration: reg })
+        });
+
+        const data = await res2.json();
+
+        if (data.error) {
+          document.getElementById("report").innerHTML = "❌ Could not load vehicle";
+          return;
+        }
+
+        // ✅ Step 3: Render UI
+        document.getElementById("report").innerHTML = `
+          <h2>🚗 ${data.make} (${data.year})</h2>
+
+          <p><strong>Registration:</strong> ${reg}</p>
+          <p><strong>Fuel:</strong> ${data.fuel}</p>
+          <p><strong>Colour:</strong> ${data.colour}</p>
+
+          <p>
+            <strong>MOT:</strong> 
+            <span style="color:${data.motStatus === 'Valid' ? 'green' : 'red'};">
+              ${data.motStatus}
+            </span>
+          </p>
+
+          <hr>
+
+          <h3>📊 Vehicle Status</h3>
+
+          <div style="display:flex; justify-content:space-between;">
+            <div>Finance</div>
+            <div style="color:green;">✔️ Clear</div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between;">
+            <div>Stolen</div>
+            <div style="color:green;">✔️ Clear</div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between;">
+            <div>Write-off</div>
+            <div style="color:green;">✔️ Clear</div>
+          </div>
+
+          <hr>
+
+          <p style="
+            padding:10px;
+            background:#e6f7e6;
+            border-radius:8px;
+            text-align:center;
+            font-weight:bold;
+          ">
+            ✔️ No major risks detected
+          </p>
+        `;
+      } catch (err) {
+        document.getElementById("report").innerHTML = "❌ Something went wrong";
       }
-
-      const reg = sessionData.reg;
-
-      // Get vehicle data
-      const res2 = await fetch('http://localhost:3001/api/v1/vehicle/preview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ registration: reg })
-      });
-
-      const data = await res2.json();
-
-      if (data.error) {
-        document.getElementById("report").innerHTML = "❌ Could not load vehicle";
-        return;
-      }
-
-      // Build UI
-      document.getElementById("report").innerHTML = `
-        <h2>🚗 ${data.make} (${data.year})</h2>
-
-        <p><strong>Registration:</strong> ${reg}</p>
-        <p><strong>Fuel:</strong> ${data.fuel}</p>
-        <p><strong>Colour:</strong> ${data.colour}</p>
-
-        <p>
-          <strong>MOT:</strong> 
-          <span style="color:${data.motStatus === 'Valid' ? 'green' : 'red'};">
-            ${data.motStatus}
-          </span>
-        </p>
-
-        <hr>
-
-        <h3>📊 Vehicle Status</h3>
-
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          margin-top:10px;
-        ">
-          <div>Finance</div>
-          <div style="color:green;">✔️ Clear</div>
-        </div>
-
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          margin-top:10px;
-        ">
-          <div>Stolen</div>
-          <div style="color:green;">✔️ Clear</div>
-        </div>
-
-        <div style="
-          display:flex;
-          justify-content:space-between;
-          margin-top:10px;
-        ">
-          <div>Write-off</div>
-          <div style="color:green;">✔️ Clear</div>
-        </div>
-
-        <hr>
-
-        <p style="
-          margin-top:15px;
-          padding:10px;
-          background:#e6f7e6;
-          border-radius:8px;
-          text-align:center;
-          font-weight:bold;
-        ">
-          ✔️ No major risks detected
-        </p>
-      `;
     }
 
     loadReport();
