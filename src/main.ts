@@ -8,9 +8,10 @@ async function bootstrap() {
     origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: '*',
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
   });
+
+  // ✅ ADD THIS (VERY IMPORTANT)
+  app.setGlobalPrefix('api/v1');
 
   await app.listen(process.env.PORT || 3001);
 }
