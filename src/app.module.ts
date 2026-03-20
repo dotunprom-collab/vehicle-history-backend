@@ -1,4 +1,3 @@
-import { PrismaService } from './prisma/prisma.service';
 import { Module } from '@nestjs/common';
 import { VehicleController } from './vehicle/vehicle.controller';
 import { VehicleService } from './vehicle/vehicle.service';
@@ -12,6 +11,6 @@ import { PaymentService } from './payment/payment.service';
     PaymentController,
     PaymentWebhookController, // ✅ THIS WAS MISSING
   ],
-  providers: [VehicleService, PaymentService, PrismaService],
+  providers: [VehicleService, PaymentService],
 })
 export class AppModule {}
