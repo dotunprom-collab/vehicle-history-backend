@@ -3,24 +3,17 @@ import axios from 'axios';
 
 @Injectable()
 export class VehicleService {
-  async getVehicle(reg: string) {
+async getVehicle(reg: string) {
   try {
-    if (!process.env.DVLA_API_KEY) {
-      console.error("❌ DVLA API KEY MISSING");
-      return { error: "Server config error" };
-    }
-
     const response = await axios.post(
       'https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles',
-      {
-        registrationNumber: reg,
-      },
+      { registrationNumber: reg },
       {
         headers: {
           'x-api-key': process.env.DVLA_API_KEY,
           'Content-Type': 'application/json',
         },
-        timeout: 5000, // 🔥 prevent hanging
+        timeout: 4000, // 🔥 VERY IMPORTANT
       }
     );
 
@@ -36,16 +29,19 @@ export class VehicleService {
     };
 
   } catch (error: any) {
-    console.error("🚨 DVLA ERROR FULL:", {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-    });
+    console.error("🚨 DVLA ERROR:", error.message);
 
-    // 🔥 NEVER crash app
+    return { error: "Service temporarily unavailable" };
+
+    // 🔥 FALLBACK (keeps app alive)
     return {
-      error: "Vehicle lookup failed",
-      };
-    }
+      reg,
+      make: "Unknown",
+      year: "N/A",
+      fuel: "N/A",
+      colour: "N/A",
+      motStatus: "Unavailable",
+    };
   }
+ }
 }
