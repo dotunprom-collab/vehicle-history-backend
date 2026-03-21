@@ -4,6 +4,7 @@ import axios from 'axios';
 @Injectable()
 export class VehicleService {
   async getVehicle(reg: string) {
+    console.log("DVLA KEY:", process.env.DVLA_API_KEY);
     try {
       const response = await axios.post(
         'https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles',
