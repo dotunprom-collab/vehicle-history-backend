@@ -10,16 +10,21 @@ export class PaymentController {
     return this.paymentService.createCheckoutSession(body.reg);
   }
 
-  @Get('success')
-  async success(@Query('session_id') sessionId: string) {
-    const session = await this.paymentService.getSession(sessionId);
+@Get('success')
+async success(@Query('session_id') sessionId: string) {
+  const session = await this.paymentService.getSession(sessionId);
 
-    const reg = session.metadata?.reg;
-
-    if (!reg) {
-      return { error: 'No registration found in Stripe session' };
-    }
-
-    return { reg };
+  // ✅ FIX: handle error case FIRST
+  if ('error' in session) {
+    return session;
   }
+
+  const reg = session.metadata?.reg;
+
+  if (!reg) {
+    return { error: 'No registration found in session' };
+  }
+
+  return { reg };
+}
 }
