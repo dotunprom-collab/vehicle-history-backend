@@ -13,7 +13,7 @@ async getVehicle(reg: string) {
           'x-api-key': process.env.DVLA_API_KEY,
           'Content-Type': 'application/json',
         },
-        timeout: 4000, // 🔥 VERY IMPORTANT
+        timeout: 2000, // 🔥 CRITICAL (reduce timeout)
       }
     );
 
@@ -31,17 +31,15 @@ async getVehicle(reg: string) {
   } catch (error: any) {
     console.error("🚨 DVLA ERROR:", error.message);
 
-    return { error: "Service temporarily unavailable" };
-
-    // 🔥 FALLBACK (keeps app alive)
+    // 🔥 IMMEDIATE SAFE RESPONSE (NO DELAY)
     return {
       reg,
-      make: "Unknown",
+      make: "Unavailable",
       year: "N/A",
       fuel: "N/A",
       colour: "N/A",
       motStatus: "Unavailable",
     };
   }
- }
+}
 }
