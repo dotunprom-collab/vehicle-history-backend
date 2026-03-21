@@ -77,7 +77,7 @@ async function checkVehicle() {
   document.getElementById("result").innerHTML = "Loading...";
 
   try {
-    const res = await fetch('https://vehicle-history-backend-production.up.railway.app/api/v1/vehicle/preview', {
+    const res = await fetch('https://vehicle-history-backend-production.up.railway.app/vehicle/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ registration: reg })
