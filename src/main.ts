@@ -13,6 +13,7 @@ async function bootstrap() {
 
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
+  app.setGlobalPrefix('api/v1');
 
   await app.listen(process.env.PORT || 3001, '0.0.0.0');
 }
