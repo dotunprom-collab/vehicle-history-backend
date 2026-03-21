@@ -1,17 +1,21 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 🔥 FULL CORS CONFIG (IMPORTANT)
   app.enableCors({
     origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: '*',
-    credentials: false,
   });
 
-  await app.listen(process.env.PORT || 3001);
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: true }));
+
+  // 🔥 CRITICAL FIX
+  await app.listen(process.env.PORT || 3001, '0.0.0.0');
 }
+
 bootstrap();
