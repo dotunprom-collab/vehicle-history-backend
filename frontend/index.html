@@ -1,57 +1,6 @@
-<script>
-async function checkVehicle() {
-  const reg = document.getElementById('reg').value;
-
-  document.getElementById("result").innerHTML = "Loading...";
-
-  try {
-    const res = await fetch('https://vehicle-history-backend-production.up.railway.app/api/v1/vehicle/preview', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ registration: reg })
-    });
-
-    const data = await res.json();
-
-    if (data.error) {
-      document.getElementById("result").innerHTML = "❌ Could not fetch vehicle";
-      return;
-    }
-
-    document.getElementById("result").innerHTML = `
-      <div style="
-        padding:20px;
-        border-radius:12px;
-        background:white;
-        box-shadow:0 2px 10px rgba(0,0,0,0.1);
-      ">
-        <h2>🚗 ${data.make} (${data.year})</h2>
-
-        <p><strong>Registration:</strong> ${reg}</p>
-        <p><strong>Fuel:</strong> ${data.fuel}</p>
-        <p><strong>Colour:</strong> ${data.colour}</p>
-
-        <p><strong>MOT:</strong> 
-          <span style="color:green;">${data.motStatus}</span>
-        </p>
-
-        <hr>
-
-        <h3>🔒 Premium Checks</h3>
-
-        <div style="opacity:0.6;">
-          <p>⚠️ Outstanding Finance</p>
-          <p>⚠️ Stolen Check</p>
-          <p>⚠️ Write-off History</p>
-        </div>
-      </div>
-    `;
-
-  } catch (err) {
-    document.getElementById("result").innerHTML = "❌ Server error. Try again.";
-    console.error(err);
-  }
-}
-</script>
+<!DOCTYPE html>
+<html>
+<body>
+  <h1>Frontend Working ✅</h1>
+</body>
+</html>
