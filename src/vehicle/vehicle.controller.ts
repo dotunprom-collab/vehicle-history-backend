@@ -6,7 +6,17 @@ export class VehicleController {
   constructor(private readonly vehicleService: VehicleService) {}
 
   @Post('preview')
-  preview(@Body() body: { registration: string }) {
-    return this.vehicleService.getVehicle(body.registration);
+  async preview(@Body() body: { registration: string }) {
+    try {
+      const result = await this.vehicleService.getVehicle(body.registration);
+
+      return result;
+    } catch (err) {
+      console.error("🔥 CONTROLLER ERROR:", err);
+
+      return {
+        error: "Service temporarily unavailable",
+      };
+    }
   }
 }
