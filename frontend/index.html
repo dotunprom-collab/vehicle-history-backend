@@ -1,6 +1,74 @@
 <!DOCTYPE html>
 <html>
-<body>
-  <h1>Frontend Working ✅</h1>
+<head>
+  <title>Vehicle History Check</title>
+</head>
+
+<body style="font-family: Arial; margin:0; background:#f5f5f5;">
+
+  <!-- HERO -->
+  <div style="background:black; color:white; padding:40px; text-align:center;">
+    <h1>Check Any UK Vehicle Instantly</h1>
+    <p>Get MOT, tax, and history checks in seconds</p>
+  </div>
+
+  <!-- INPUT -->
+  <div style="text-align:center; margin-top:30px;">
+    <input 
+      type="text" 
+      id="reg" 
+      placeholder="Enter registration"
+      style="padding:10px;"
+    />
+
+    <button onclick="checkVehicle()" style="padding:10px 15px;">
+      Check Vehicle
+    </button>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result" style="text-align:center; margin-top:20px;"></div>
+
+  <script>
+  async function checkVehicle() {
+    const reg = document.getElementById('reg').value;
+
+    document.getElementById("result").innerHTML = "Loading...";
+
+    try {
+      const res = await fetch('https://vehicle-history-backend-production.up.railway.app/vehicle/preview', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({ registration: reg })
+});
+
+console.log("STATUS:", res.status);
+
+const text = await res.text();
+console.log("RAW RESPONSE:", text);
+
+const data = JSON.parse(text);
+
+      if (data.error) {
+        document.getElementById("result").innerHTML = "Invalid registration";
+        return;
+      }
+
+      document.getElementById("result").innerHTML = `
+        <h2>${data.make} (${data.year})</h2>
+        <p>Fuel: ${data.fuel}</p>
+        <p>Colour: ${data.colour}</p>
+        <p>MOT: ${data.motStatus}</p>
+      `;
+
+    } catch (err) {
+      console.error(err);
+      document.getElementById("result").innerHTML = "Server error";
+    }
+  }
+  </script>
+
 </body>
 </html>
