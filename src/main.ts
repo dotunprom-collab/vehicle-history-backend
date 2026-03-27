@@ -12,7 +12,11 @@ async function bootstrap() {
     throw new Error("❌ PORT is not defined");
   }
 
-  await app.listen(Number(port), '0.0.0.0');
+  const port = Number(process.env.PORT) || 3000;
+
+  await app.listen(port, '0.0.0.0');
+
+  console.log(`🚀 Server running on port ${port}`);
 
   console.log(`🚀 Server running on port ${port}`);
 }
