@@ -22,9 +22,11 @@ async function bootstrap() {
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
 
-  const port = process.env.PORT || 3001;
-await app.listen(port);
-console.log("🚀 RUNNING ON PORT:", port);
+  const port = process.env.PORT ? Number(process.env.PORT) : 3001;
+
+await app.listen(port, '0.0.0.0');
+
+console.log(`🚀 Server running on port ${port}`);
 }
 
 bootstrap();
