@@ -5,7 +5,7 @@ import { PaymentController } from './payment/payment.controller';
 import { PaymentService } from './payment/payment.service';
 
 @Module({
-  controllers: [
+    controllers: [
     VehicleController,
     PaymentController,
     HealthController,

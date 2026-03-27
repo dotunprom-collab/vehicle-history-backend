@@ -6,17 +6,9 @@ async function bootstrap() {
 
   app.enableCors();
 
-  const port = process.env.PORT;
-
-  if (!port) {
-    throw new Error("❌ PORT is not defined");
-  }
-
   const port = Number(process.env.PORT) || 3000;
 
   await app.listen(port, '0.0.0.0');
-
-  console.log(`🚀 Server running on port ${port}`);
 
   console.log(`🚀 Server running on port ${port}`);
 }
