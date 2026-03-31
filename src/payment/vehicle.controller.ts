@@ -1,16 +1,6 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { VehicleService } from './vehicle.service';
 
-// ✅ HEALTH
-@Controller()
-export class HealthController {
-  @Get()
-  health() {
-    return { status: 'ok' };
-  }
-}
-
-// ✅ VEHICLE
 @Controller('vehicle')
 export class VehicleController {
   constructor(private readonly vehicleService: VehicleService) {}
@@ -21,7 +11,7 @@ export class VehicleController {
     return this.vehicleService.getVehicle(body.registration);
   }
 
-  // 🚨 THIS IS THE IMPORTANT ONE (YOU ARE MISSING OR NOT DEPLOYED)
+  // 🚀 FULL REPORT
   @Post('full')
   async getFull(@Body() body: { registration: string }) {
     return this.vehicleService.getFullReport(body.registration);

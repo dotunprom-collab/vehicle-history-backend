@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Vehicle Report</title>
+</head>
+
+<body style="margin:0; font-family:Arial; background:#eef1f5;">
+
+<!-- HEADER -->
+<div style="
+  text-align:center;
+  padding:20px;
+  font-weight:bold;
+  font-size:18px;
+">
+  ✔ carscheck.uk
+</div>
+
+<!-- MAIN CARD -->
+<div style="
+  max-width:900px;
+  margin:40px auto;
+  background:white;
+  padding:30px;
+  border-radius:12px;
+  box-shadow:0 5px 20px rgba(0,0,0,0.1);
+">
+
+  <div id="content">Loading...</div>
+
+</div>
+
+<script>
+const API = "https://vehicle-history-backend-production.up.railway.app";
+
+// ✅ GET REG FROM URL
+const urlParams = new URLSearchParams(window.location.search);
+const reg = urlParams.get("reg");
+
+// 🚨 DEBUG (optional)
+console.log("REG:", reg);
+
+async function loadData() {
+
+  // ✅ STOP if no reg
+  if (!reg) {
+    document.getElementById("content").innerHTML = "❌ No registration provided";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/vehicle/preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ registration: reg })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      document.getElementById("content").innerHTML = "Invalid registration";
+      return;
+    }
+
+    document.getElementById("content").innerHTML = `
+      
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        flex-wrap:wrap;
+      ">
+        <div>
+          <div style="color:#3b5cb8; font-weight:bold;">${data.make}</div>
+          <h2 style="margin:5px 0;">
+            ${data.make} (${data.year})
+          </h2>
+          <div style="color:#666; font-size:14px;">
+            Report Date: ${new Date().toLocaleDateString()}
+          </div>
+        </div>
+
+        <button onclick="upgrade()" style="
+          background:#3b5cb8;
+          color:white;
+          border:none;
+          padding:15px 30px;
+          border-radius:8px;
+          font-weight:bold;
+          cursor:pointer;
+        ">
+          Download Full Report
+        </button>
+      </div>
+
+      <hr style="margin:25px 0;">
+
+      <div style="display:flex; gap:30px; flex-wrap:wrap;">
+
+        <div style="flex:1; min-width:250px;">
+          ${row("Registration", reg)}
+          ${row("Make", data.make)}
+          ${row("Year", data.year)}
+          ${row("Fuel", data.fuel)}
+          ${row("Colour", data.colour)}
+          ${row("MOT Status", data.motStatus)}
+        </div>
+
+        <div style="
+          flex:1;
+          min-width:250px;
+          background:#f1f3f6;
+          border-radius:10px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          padding:10px;
+        ">
+          <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70"
+            style="max-width:100%; border-radius:10px;" />
+        </div>
+
+      </div>
+
+      <div style="
+        margin-top:30px;
+        padding:20px;
+        background:#ffe6e6;
+        border-radius:10px;
+        color:#d32f2f;
+        font-weight:bold;
+        text-align:center;
+      ">
+        🚨 1 potential issue detected
+      </div>
+
+      <div style="
+        margin-top:15px;
+        padding:20px;
+        background:#fff3cd;
+        border-radius:10px;
+      ">
+        ⚠️ Full report includes:
+        <ul>
+          <li>Outstanding Finance</li>
+          <li>Stolen Vehicle Check</li>
+          <li>Write-off History</li>
+        </ul>
+      </div>
+
+      <button onclick="upgrade()" style="
+        margin-top:20px;
+        width:100%;
+        padding:18px;
+        background:#00c853;
+        color:white;
+        border:none;
+        border-radius:10px;
+        font-size:16px;
+        font-weight:bold;
+        cursor:pointer;
+      ">
+        🔓 Unlock Full Report (£4.99)
+      </button>
+    `;
+
+  } catch (err) {
+    document.getElementById("content").innerHTML = "Server error";
+  }
+}
+
+// ✅ SAFE UPGRADE FUNCTION
+function upgrade() {
+
+  if (!reg) {
+    alert("Registration missing. Please search again.");
+    window.location.href = "/index.html";
+    return;
+  }
+
+  // 👉 go to pricing/checkout page (choose package)
+  window.location.href = `/check.html?reg=${reg}`;
+}
+
+// UI helper
+function row(label, value) {
+  return `
+    <div style="
+      display:flex;
+      justify-content:space-between;
+      padding:12px;
+      background:#f9f9f9;
+      border-radius:6px;
+      margin-bottom:8px;
+    ">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `;
+}
+
+loadData();
+</script>
+
+<!-- 🔻 FOOTER -->
+<div style="
+  background:#020617;
+  padding:60px 40px 30px;
+  margin-top:60px;
+  color:#94a3b8;
+">
+
+  <div style="
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:40px;
+  ">
+
+    <!-- LEFT -->
+    <div style="max-width:400px;">
+      <div style="font-size:18px; font-weight:bold; color:white;">
+        🚗 AutoCheck UK
+      </div>
+
+      <p style="margin-top:15px;">
+        Trusted vehicle history checks for UK buyers and sellers. 
+        We source data from official DVLA records, MOT databases, 
+        and financial registries.
+      </p>
+
+      <div style="margin-top:15px; font-size:13px;">
+        🔒 GDPR Compliant &nbsp;&nbsp; 🔐 SSL Encrypted
+      </div>
+    </div>
+
+    <!-- SERVICES -->
+    <div>
+      <h4 style="color:white;">Services</h4>
+      <p><a href="/check.html" style="color:#94a3b8; text-decoration:none;">Vehicle Check</a></p>
+      <p><a href="/pricing.html" style="color:#94a3b8; text-decoration:none;">Pricing</a></p>
+    </div>
+
+    <!-- LEGAL -->
+    <div>
+      <h4 style="color:white;">Legal</h4>
+      <p><a href="#" style="color:#94a3b8; text-decoration:none;">Privacy Policy</a></p>
+      <p><a href="#" style="color:#94a3b8; text-decoration:none;">Terms of Service</a></p>
+      <p><a href="#" style="color:#94a3b8; text-decoration:none;">Cookie Policy</a></p>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM -->
+  <div style="
+    border-top:1px solid rgba(255,255,255,0.1);
+    margin-top:30px;
+    padding-top:20px;
+    text-align:center;
+    font-size:13px;
+  ">
+    © 2026 AutoCheck UK. All rights reserved. Data sourced from DVLA, VOSA, and financial registries.
+  </div>
+
+</div>
+
+</body>
+</html>

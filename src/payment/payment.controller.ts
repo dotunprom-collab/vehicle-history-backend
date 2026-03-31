@@ -5,26 +5,42 @@ import { PaymentService } from './payment.service';
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
+  // 💳 CREATE CHECKOUT SESSION
   @Post('checkout')
-  createCheckout(@Body() body: { reg: string }) {
-    return this.paymentService.createCheckoutSession(body.reg);
+  async checkout(@Body() body: { reg: string; pkg: string }) {
+    return this.paymentService.createCheckoutSession(body.reg, body.pkg);
   }
 
-@Get('success')
+  // ✅ STRIPE SUCCESS HANDLER
+  @Get('success')
 async success(@Query('session_id') sessionId: string) {
-  const session = await this.paymentService.getSession(sessionId);
+  try {
+    if (!sessionId) {
+      return { error: 'Missing session ID' };
+    }
 
-  // ✅ FIX: handle error case FIRST
-  if ('error' in session) {
-    return session;
+    const session = await this.paymentService.getSession(sessionId);
+
+    // ✅ TYPE GUARD
+    if (!session || 'error' in session) {
+      return { error: 'Session not found' };
+    }
+
+    const reg = session.metadata?.reg;
+    const pkg = session.metadata?.pkg;
+
+    if (!reg) {
+      return { error: 'No registration found in session' };
+    }
+
+    return {
+      reg,
+      pkg
+    };
+
+  } catch (err) {
+    console.error("🔥 SUCCESS ENDPOINT ERROR:", err);
+    return { error: 'Failed to retrieve session' };
   }
-
-  const reg = session.metadata?.reg;
-
-  if (!reg) {
-    return { error: 'No registration found in session' };
   }
-
-  return { reg };
-}
 }

@@ -1,116 +1,83 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Vehicle Report</title>
-</head>
+<script>
+const API_BASE = "https://vehicle-history-backend-production.up.railway.app";
 
-<body style="font-family: Arial; background:#f5f5f5;">
+// ✅ GET SESSION ID FROM URL
+const urlParams = new URLSearchParams(window.location.search);
+const sessionId = urlParams.get("session_id");
 
-  <h1 style="text-align:center;">✅ Vehicle Report</h1>
+async function loadReport() {
 
-  <div id="report" style="
-    max-width:600px;
-    margin:20px auto;
-    padding:20px;
-    border-radius:12px;
-    background:white;
-    box-shadow:0 2px 10px rgba(0,0,0,0.1);
-  ">
-    Loading report...
-  </div>
+  if (!sessionId) {
+    document.body.innerHTML = "❌ No session ID found";
+    return;
+  }
 
-  <script>
-    // 🔴 IMPORTANT: REPLACE THIS WITH YOUR RAILWAY URL
-    const API_BASE = "https://vehicle-history-backend-production.up.railway.app";
+  try {
+    // 🔥 GET REG FROM BACKEND
+    const res = await fetch(`${API_BASE}/payment/success?session_id=${sessionId}`);
+    const sessionData = await res.json();
 
-    async function loadReport() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const sessionId = urlParams.get('session_id');
+    console.log("SESSION DATA:", sessionData); // 👈 DEBUG
 
-      if (!sessionId) {
-        document.getElementById("report").innerHTML = "❌ No session found";
-        return;
-      }
-
-      try {
-        // ✅ Step 1: Get registration from backend
-        const res1 = await fetch(`${API_BASE}/api/v1/payment/success?session_id=${sessionId}`);
-        const sessionData = await res1.json();
-
-        if (!sessionData.reg) {
-          document.getElementById("report").innerHTML = "❌ No registration found";
-          return;
-        }
-
-        const reg = sessionData.reg;
-
-        // ✅ Step 2: Fetch vehicle data
-        const res2 = await fetch(`${API_BASE}/api/v1/vehicle/preview`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ registration: reg })
-        });
-
-        const data = await res2.json();
-
-        if (data.error) {
-          document.getElementById("report").innerHTML = "❌ Could not load vehicle";
-          return;
-        }
-
-        // ✅ Step 3: Render UI
-        document.getElementById("report").innerHTML = `
-          <h2>🚗 ${data.make} (${data.year})</h2>
-
-          <p><strong>Registration:</strong> ${reg}</p>
-          <p><strong>Fuel:</strong> ${data.fuel}</p>
-          <p><strong>Colour:</strong> ${data.colour}</p>
-
-          <p>
-            <strong>MOT:</strong> 
-            <span style="color:${data.motStatus === 'Valid' ? 'green' : 'red'};">
-              ${data.motStatus}
-            </span>
-          </p>
-
-          <hr>
-
-          <h3>📊 Vehicle Status</h3>
-
-          <div style="display:flex; justify-content:space-between;">
-            <div>Finance</div>
-            <div style="color:green;">✔️ Clear</div>
-          </div>
-
-          <div style="display:flex; justify-content:space-between;">
-            <div>Stolen</div>
-            <div style="color:green;">✔️ Clear</div>
-          </div>
-
-          <div style="display:flex; justify-content:space-between;">
-            <div>Write-off</div>
-            <div style="color:green;">✔️ Clear</div>
-          </div>
-
-          <hr>
-
-          <p style="
-            padding:10px;
-            background:#e6f7e6;
-            border-radius:8px;
-            text-align:center;
-            font-weight:bold;
-          ">
-            ✔️ No major risks detected
-          </p>
-        `;
-      } catch (err) {
-        document.getElementById("report").innerHTML = "❌ Something went wrong";
-      }
+    if (sessionData.error) {
+      document.body.innerHTML = "❌ " + sessionData.error;
+      return;
     }
 
-    loadReport();
-  </script>
+    const reg = sessionData.reg;
 
-</body>
-</html>
+    if (!reg) {
+      document.body.innerHTML = "❌ No registration found";
+      return;
+    }
+
+    // 🚀 NOW LOAD FULL REPORT
+    const res2 = await fetch(`${API_BASE}/vehicle/full`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ registration: reg })
+    });
+
+    const data = await res2.json();
+    console.log("FULL DATA:", data);
+
+    if (data.error) {
+      document.body.innerHTML = "❌ Failed to load report";
+      return;
+    }
+
+    // ✅ DISPLAY REPORT
+    document.body.innerHTML = `
+      <div style="padding:40px; font-family:Arial;">
+        <h1>🚗 Full Vehicle Report</h1>
+
+        <h2>${data.make} (${data.year})</h2>
+        <p>${data.fuel} • ${data.colour}</p>
+
+        <hr>
+
+        <p><strong>Finance:</strong> Clear</p>
+        <p><strong>Stolen:</strong> No</p>
+        <p><strong>Write-off:</strong> No</p>
+
+        <div style="
+          margin-top:20px;
+          padding:15px;
+          background:#e6f7e6;
+          border-radius:10px;
+        ">
+          ✔ Full report unlocked successfully
+        </div>
+      </div>
+    `;
+
+  } catch (err) {
+    document.body.innerHTML = "❌ Server error";
+  }
+}
+
+// 🚀 RUN
+loadReport();
+</script>

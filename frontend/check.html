@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Checkout</title>
+</head>
+
+<body style="font-family:Arial; background:#0b1220; color:white; margin:0; text-align:center;">
+
+<h1 style="padding:30px;">🚗 Complete Your Check</h1>
+
+<div id="content" style="max-width:700px; margin:auto;">
+  Loading...
+</div>
+
+<script>
+const API_BASE = "https://vehicle-history-backend-production.up.railway.app";
+
+// ✅ GET REG FROM URL
+const urlParams = new URLSearchParams(window.location.search);
+const reg = urlParams.get("reg");
+
+// 🔥 DEFAULT PACKAGE
+let selectedPackage = "premium";
+
+// 💰 PRICES
+const pricing = {
+  standard: "£4.99",
+  premium: "£9.99"
+};
+
+// 🚀 LOAD PAGE
+function loadPage() {
+
+  if (!reg) {
+    document.getElementById("content").innerHTML = "❌ Missing registration";
+    return;
+  }
+
+  renderUI();
+}
+
+// 🎨 RENDER UI
+function renderUI() {
+
+  document.getElementById("content").innerHTML = `
+    <div style="
+      background:#111827;
+      padding:30px;
+      border-radius:16px;
+    ">
+
+      <h2>${reg}</h2>
+
+      <p style="color:#94a3b8; margin-bottom:20px;">
+        Choose your report package
+      </p>
+
+      <!-- 🚨 URGENCY -->
+      <div style="
+        background:#ffe6e6;
+        color:#d32f2f;
+        padding:10px;
+        border-radius:8px;
+        font-weight:bold;
+        margin-bottom:20px;
+      ">
+        🚨 Hidden issues may still exist — full report recommended
+      </div>
+
+      <!-- 💰 PACKAGES -->
+      <div style="
+        display:flex;
+        gap:20px;
+        flex-wrap:wrap;
+        justify-content:center;
+      ">
+
+        <!-- STANDARD -->
+        <div onclick="selectPackage('standard')" id="standardCard" style="
+          background:#1e293b;
+          padding:25px;
+          border-radius:12px;
+          width:250px;
+          cursor:pointer;
+          border:2px solid transparent;
+        ">
+          <h3>Standard</h3>
+          <h1>${pricing.standard}</h1>
+          <p style="font-size:13px; color:#94a3b8;">
+            Essential checks for peace of mind
+          </p>
+        </div>
+
+        <!-- PREMIUM -->
+        <div onclick="selectPackage('premium')" id="premiumCard" style="
+          background:#2563eb;
+          padding:25px;
+          border-radius:12px;
+          width:250px;
+          cursor:pointer;
+          border:2px solid #38bdf8;
+          position:relative;
+        ">
+
+          <div style="
+            position:absolute;
+            top:-10px;
+            left:50%;
+            transform:translateX(-50%);
+            background:#00c853;
+            color:white;
+            padding:5px 10px;
+            font-size:12px;
+            border-radius:6px;
+          ">
+            BEST VALUE
+          </div>
+
+          <h3>Premium</h3>
+          <h1>${pricing.premium}</h1>
+          <p style="font-size:13px; color:#e0f2fe;">
+            Full deep history + risk analysis
+          </p>
+        </div>
+
+      </div>
+
+      <!-- 💳 CTA -->
+      <button onclick="startPayment()" style="
+        margin-top:30px;
+        width:100%;
+        padding:16px;
+        background:#00c853;
+        color:white;
+        border:none;
+        border-radius:10px;
+        font-size:16px;
+        font-weight:bold;
+        cursor:pointer;
+      ">
+        🔐 Continue (${pricing[selectedPackage]})
+      </button>
+
+      <p style="margin-top:10px; font-size:12px; color:#888;">
+        Secure payment powered by Stripe
+      </p>
+
+    </div>
+  `;
+
+  highlightSelected();
+}
+
+// 🎯 SELECT PACKAGE
+function selectPackage(pkg) {
+  selectedPackage = pkg;
+  highlightSelected();
+}
+
+// ✨ HIGHLIGHT UI
+function highlightSelected() {
+  const standard = document.getElementById("standardCard");
+  const premium = document.getElementById("premiumCard");
+
+  if (!standard || !premium) return;
+
+  standard.style.border = selectedPackage === "standard" ? "2px solid #38bdf8" : "2px solid transparent";
+  premium.style.border = selectedPackage === "premium" ? "2px solid #38bdf8" : "2px solid #38bdf8";
+}
+
+// 💳 PAYMENT
+async function startPayment() {
+
+  try {
+    const res = await fetch(`${API_BASE}/payment/checkout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        reg: reg,
+        pkg: selectedPackage
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert("Payment failed");
+    }
+
+  } catch (err) {
+    alert("Server error");
+  }
+}
+
+// 🚀 INIT
+loadPage();
+</script>
+
+</body>
+</html>
