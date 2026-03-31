@@ -15,34 +15,13 @@ export class HealthController {
 export class VehicleController {
   constructor(private readonly vehicleService: VehicleService) {}
 
-  // 🟢 FREE DVLA PREVIEW
   @Post('preview')
   async preview(@Body() body: { registration: string }) {
-    try {
-      const result = await this.vehicleService.getVehicle(body.registration);
-
-      return result;
-
-    } catch (err) {
-      console.error("🔥 CONTROLLER ERROR:", err);
-
-      return {
-        error: "Service temporarily unavailable",
-      };
-    }
+    return this.vehicleService.getVehicle(body.registration);
   }
 
-  // 🔥 PAID FULL REPORT
   @Post('full')
-  async getFull(@Body() body: { registration: string }) {
-    try {
-      return await this.vehicleService.getFullReport(body.registration);
-    } catch (err) {
-      console.error("🔥 FULL REPORT ERROR:", err);
-
-      return {
-        error: "Failed to fetch full report",
-      };
-    }
+  async full(@Body() body: { registration: string }) {
+    return this.vehicleService.getFullReport(body.registration);
   }
 }
