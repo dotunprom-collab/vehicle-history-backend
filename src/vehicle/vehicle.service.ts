@@ -45,7 +45,8 @@ export class VehicleService {
 
   // 🔥 FULL PREMIUM REPORT (RapidCarCheck)
 async getFullReport(reg: string) {
-  console.log("🚀 FULL REPORT CALLED WITH:", reg);
+  console.log("🚀 FULL REPORT CALLED:", reg);
+  console.log("🔑 API KEY:", process.env.RAPID_API_KEY);
   try {
     const apiKey = process.env.RAPID_API_KEY;
 
