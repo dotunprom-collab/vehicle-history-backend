@@ -61,6 +61,12 @@ async function loadReport() {
     });
 
     const data = await res2.json();
+    console.log("FULL DATA:", data);
+
+    document.getElementById("report").innerHTML = `
+    <pre>${JSON.stringify(data, null, 2)}</pre>
+    `;
+    return;
 
     console.log("FULL DATA:", data);
 

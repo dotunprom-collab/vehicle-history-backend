@@ -48,18 +48,13 @@ async getFullReport(reg: string) {
   try {
     const apiKey = process.env.RAPID_API_KEY;
 
-    console.log("🔑 API KEY:", apiKey);
-    console.log("🚗 REG:", reg);
-
     const url = `https://www.rapidcarcheck.co.uk/api/?key=${apiKey}&domain=cheapregcheck.com&plate=${reg}`;
 
-    console.log("🌍 REQUEST URL:", url);
-
     const response = await axios.get(url);
-
-    console.log("✅ RAW RESPONSE:", response.data);
-
     const data = response.data;
+
+    // ✅ DEBUG LOG (THIS IS WHAT YOU ADD)
+    console.log("RAW RAPID:", JSON.stringify(data, null, 2));
 
     if (data.HasError || !data.Results) {
       return {
@@ -86,7 +81,7 @@ async getFullReport(reg: string) {
     };
 
   } catch (error: any) {
-    console.error("🔥 FULL ERROR:", error.response?.data || error.message);
+    console.error("🔥 RAPID ERROR:", error.response?.data || error.message);
 
     return {
       reg,
