@@ -44,50 +44,56 @@ export class VehicleService {
   }
 
   // 🔥 FULL PREMIUM REPORT (RapidCarCheck)
-  async getFullReport(reg: string) {
-    try {
-      const response = await axios.post(
-        "https://api.rapidcarcheck.co.uk/v1/full-check",
-        {
-          vrm: reg
-        },
-        {
-          headers: {
-            "x-api-key": process.env.RAPID_API_KEY,
-            "Content-Type": "application/json"
-          }
-        }
-      );
+async getFullReport(reg: string) {
+  try {
+    const apiKey = process.env.RAPID_API_KEY;
 
-      const data = response.data;
+    console.log("🔑 API KEY:", apiKey);
+    console.log("🚗 REG:", reg);
 
+    const url = `https://www.rapidcarcheck.co.uk/api/?key=${apiKey}&domain=cheapregcheck.com&plate=${reg}`;
+
+    console.log("🌍 REQUEST URL:", url);
+
+    const response = await axios.get(url);
+
+    console.log("✅ RAW RESPONSE:", response.data);
+
+    const data = response.data;
+
+    if (data.HasError || !data.Results) {
       return {
         reg,
-        make: data.make || "Unknown",
-        year: data.year || "N/A",
-        fuel: data.fuel || "N/A",
-        colour: data.colour || "N/A",
-
-        // 🚨 PREMIUM DATA
-        finance: data.finance?.status || "Unknown",
-        stolen: data.stolen?.status || "Unknown",
-        writeOff: data.writeOff?.status || "Unknown",
-        mileage: data.mileage || [],
-        owners: data.owners || "N/A",
-
-        // 🎯 RISK SCORE
-        riskScore: calculateRiskScore(data)
-      };
-
-    } catch (error: any) {
-      console.error("🔥 RAPID API ERROR:", error.message);
-
-      return {
-        reg,
-        error: "Failed to load premium data"
+        error: "No vehicle data found"
       };
     }
+
+    const vehicle = data.Results.InitialVehicleCheckModel;
+
+    return {
+      reg,
+      make: vehicle.Make || "Unknown",
+      year: vehicle.Year || "N/A",
+      fuel: vehicle.FuelType || "N/A",
+      colour: vehicle.Colour || "N/A",
+      mileage: vehicle.AverageMileage || 0,
+      bodyStyle: vehicle.BodyStyle || "N/A",
+      bhp: vehicle.Bhp || "N/A",
+      finance: "unknown",
+      stolen: "unknown",
+      writeOff: "unknown",
+      riskScore: calculateRiskScore(vehicle)
+    };
+
+  } catch (error: any) {
+    console.error("🔥 FULL ERROR:", error.response?.data || error.message);
+
+    return {
+      reg,
+      error: "Failed to load premium data"
+    };
   }
+}
 }
 
 // ✅ OUTSIDE CLASS (IMPORTANT)
