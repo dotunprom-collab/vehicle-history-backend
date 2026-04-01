@@ -52,6 +52,7 @@ async function loadReport() {
     const reg = sessionData.reg;
 
     // 🚀 STEP 2: GET FULL REPORT
+    console.log("🚀 CALLING FULL API:", reg);
     const res2 = await fetch(`${API_BASE}/vehicle/full`, {
       method: "POST",
       headers: {
