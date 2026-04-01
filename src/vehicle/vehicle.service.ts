@@ -60,32 +60,36 @@ async getFullReport(reg: string) {
     console.log("RAW RAPID:", JSON.stringify(data, null, 2));
 
     // ✅ HANDLE ERROR RESPONSE
-    if (data.status !== 1) {
-      return {
-        reg,
-        error: data.status_msg || "No vehicle data found"
-      };
-    }
+   // ✅ HANDLE ERROR RESPONSE
+if (data.HasError || !data.Results) {
+  return {
+    reg,
+    error: data.status_msg || "No vehicle data found"
+  };
+}
 
-    // ✅ FLEXIBLE DATA EXTRACTION (IMPORTANT)
-    const vehicle =
-      data.Results?.InitialVehicleCheckModel ||
-      data.vehicle ||
-      data.data ||
-      data;
+// ✅ CORRECT DATA EXTRACTION
+const vehicle =
+  data.Results?.InitialVehicleCheckModel?.BasicVehicleDetailsModel ||
+  data.vehicle ||
+  data.data ||
+  data;
 
-    return {
-      reg,
-      make: vehicle.Make || vehicle.make || "N/A",
-      year: vehicle.YearOfManufacture || vehicle.year || "N/A",
-      fuel: vehicle.FuelType || vehicle.fuel || "N/A",
-      colour: vehicle.Colour || vehicle.colour || "N/A",
-      mileage: vehicle.AverageMileage || vehicle.mileage || 0,
-      bodyStyle: vehicle.BodyStyle || "N/A",
-      bhp: vehicle.Bhp || "N/A",
-      engineSize: vehicle.EngineSize || "N/A",
-      riskScore: calculateRiskScore(vehicle)
-    };
+// ✅ RETURN CLEAN DATA
+return {
+  reg,
+  make: vehicle.Make || "N/A",
+  model: vehicle.Model || "N/A",
+  year: vehicle.DateOfFirstRegistration || "N/A",
+  fuel: vehicle.FuelType || "N/A",
+  colour: vehicle.Colour || "N/A",
+  mileage: vehicle.AverageMileage || 0,
+  bodyStyle: vehicle.BodyStyle || "N/A",
+  engineSize: vehicle.CylinderCapacity || "N/A",
+  motDue: vehicle.DateMotDue || "N/A",
+  taxDue: vehicle.DateRoadTaxDue || "N/A",
+  riskScore: calculateRiskScore(vehicle)
+};
 
   } catch (error: any) {
     console.error("🔥 RAPID ERROR:", error.response?.data || error.message);
