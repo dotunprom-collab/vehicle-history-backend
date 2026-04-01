@@ -48,7 +48,7 @@ async getFullReport(reg: string) {
   try {
     const apiKey = process.env.RAPID_API_KEY;
 
-    const url = `https://www.rapidcarcheck.co.uk/api/?key=${apiKey}&domain=cheapregcheck.com&plate=${reg}`;
+    const url = `https://www.rapidcarcheck.co.uk/api/?key=${apiKey}&domain=vehicle-history-backend-production.up.railway.app&plate=${reg}`;
 
     const response = await axios.get(url);
     const data = response.data;
