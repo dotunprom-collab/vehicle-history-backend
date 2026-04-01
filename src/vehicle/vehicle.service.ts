@@ -45,38 +45,44 @@ export class VehicleService {
 
   // 🔥 FULL PREMIUM REPORT (RapidCarCheck)
 async getFullReport(reg: string) {
+  console.log("🚀 FULL REPORT CALLED WITH:", reg);
   try {
     const apiKey = process.env.RAPID_API_KEY;
 
     const url = `https://www.rapidcarcheck.co.uk/api/?key=${apiKey}&domain=vehicle-history-backend-production.up.railway.app&plate=${reg}`;
 
+    console.log("🌍 REQUEST URL:", url);
+
     const response = await axios.get(url);
     const data = response.data;
 
-    // ✅ DEBUG LOG (THIS IS WHAT YOU ADD)
     console.log("RAW RAPID:", JSON.stringify(data, null, 2));
 
-    if (data.HasError || !data.Results) {
+    // ✅ HANDLE ERROR RESPONSE
+    if (data.status !== 1) {
       return {
         reg,
-        error: "No vehicle data found"
+        error: data.status_msg || "No vehicle data found"
       };
     }
 
-    const vehicle = data.Results.InitialVehicleCheckModel;
+    // ✅ FLEXIBLE DATA EXTRACTION (IMPORTANT)
+    const vehicle =
+      data.Results?.InitialVehicleCheckModel ||
+      data.vehicle ||
+      data.data ||
+      data;
 
     return {
       reg,
-      make: vehicle.Make || "Unknown",
-      year: vehicle.Year || "N/A",
-      fuel: vehicle.FuelType || "N/A",
-      colour: vehicle.Colour || "N/A",
-      mileage: vehicle.AverageMileage || 0,
+      make: vehicle.Make || vehicle.make || "N/A",
+      year: vehicle.YearOfManufacture || vehicle.year || "N/A",
+      fuel: vehicle.FuelType || vehicle.fuel || "N/A",
+      colour: vehicle.Colour || vehicle.colour || "N/A",
+      mileage: vehicle.AverageMileage || vehicle.mileage || 0,
       bodyStyle: vehicle.BodyStyle || "N/A",
       bhp: vehicle.Bhp || "N/A",
-      finance: "unknown",
-      stolen: "unknown",
-      writeOff: "unknown",
+      engineSize: vehicle.EngineSize || "N/A",
       riskScore: calculateRiskScore(vehicle)
     };
 

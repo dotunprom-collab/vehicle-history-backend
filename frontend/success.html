@@ -70,11 +70,13 @@ async function loadReport() {
 
     console.log("FULL DATA:", data);
 
-    if (data.error) {
-  console.log("FULL ERROR:", data);
+ if (data.error) {
   document.getElementById("report").innerHTML = `
-    ❌ Failed to load report <br><br>
-    ${JSON.stringify(data)}
+    <div style="background:white;padding:20px;border-radius:10px;">
+      <h2>🚗 ${data.reg}</h2>
+      <p>⚠️ Limited data available</p>
+      <p>Basic vehicle info could not be fully retrieved.</p>
+    </div>
   `;
   return;
 }
