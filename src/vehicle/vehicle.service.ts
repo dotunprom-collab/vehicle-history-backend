@@ -48,7 +48,7 @@ async getFullReport(reg: string) {
   console.log("🚀 FULL REPORT CALLED:", reg);
   console.log("🔑 API KEY:", process.env.RAPID_API_KEY);
   try {
-    const apiKey = process.env.RAPID_API_KEY;
+    const apiKey = "2fc5efb58dd5ca0d76fc1e2587d24ee3";
 
     const url = `https://www.rapidcarcheck.co.uk/api/?key=${apiKey}&domain=vehicle-history-backend-production.up.railway.app&plate=${reg}`;
 
