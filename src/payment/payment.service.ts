@@ -67,7 +67,7 @@ export class PaymentService {
       if (!this.stripe) {
         return { error: 'Payments not configured' };
       }
-
+      console.log("🚀 USING DOMAIN: https://vehicle-history-backend-production.up.railway.app");
       const session = await this.stripe.checkout.sessions.retrieve(sessionId);
       return session;
 
