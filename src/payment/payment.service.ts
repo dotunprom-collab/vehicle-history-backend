@@ -48,8 +48,8 @@ export class PaymentService {
             quantity: 1,
           },
         ],
-        success_url: `http://127.0.0.1:8080/success.html?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `http://127.0.0.1:8080`,
+        success_url: `https://your-frontend-domain.com/success.html?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `https://your-frontend-domain.com/check.html`,
         metadata: { reg, pkg },
       });
 

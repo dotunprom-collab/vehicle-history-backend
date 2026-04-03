@@ -1,109 +1,222 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Pricing - AutoCheck UK</title>
-</head>
-<style>
-  a:hover {
-    color: rgb(6, 95, 57) !important;
-  }
-</style>
+  <title>Pricing - CheapRegCheck UK</title>
+  <style>
+    body {
+      margin:0;
+      font-family: Arial, sans-serif;
+      background:#ffffff;
+      color:#111827;
+      text-align:center;
+    }
 
-<body style="margin:0; font-family:Arial; background:#0b1220; color:white; text-align:center;">
+    a {
+      text-decoration:none;
+    }
+
+    a:hover {
+      color:#16a34a !important;
+    }
+
+    /* NAVBAR */
+    .nav {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:20px 40px;
+      background:white;
+      border-bottom:1px solid #e5e7eb;
+    }
+
+    .nav-links {
+      display:flex;
+      gap:20px;
+    }
+
+    .nav-links a {
+      color:#6b7280;
+      padding:8px 12px;
+      border-radius:8px;
+    }
+
+    .nav-links a:hover {
+      background:#ecfdf5;
+      color:#16a34a;
+    }
+
+    .active {
+      color:#16a34a !important;
+      font-weight:bold;
+    }
+
+    /* PRICING CARDS */
+    .pricing-container {
+      display:flex;
+      justify-content:center;
+      gap:20px;
+      margin-top:50px;
+      flex-wrap:wrap;
+    }
+
+    .card {
+      background:white;
+      border:1px solid #e5e7eb;
+      padding:25px;
+      border-radius:16px;
+      width:260px;
+      transition:0.2s;
+    }
+
+    .card:hover {
+      transform:translateY(-5px);
+      box-shadow:0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    .price-green {
+      color:#16a34a;
+    }
+
+    .btn {
+      margin-top:15px;
+      padding:10px 20px;
+      border:none;
+      border-radius:8px;
+      background:#16a34a;
+      color:white;
+      font-weight:bold;
+      cursor:pointer;
+    }
+
+    .btn:hover {
+      background:#15803d;
+    }
+
+    /* FOOTER */
+    .footer {
+      background:#111827;
+      color:#94a3b8;
+      padding:60px 40px;
+      margin-top:120px;
+    }
+  </style>
+</head>
+<body>
 
 <!-- NAVBAR -->
-<div style="display:flex; justify-content:space-between; padding:20px 40px;">
-  <div style="font-weight:bold;">🚗 AutoCheck UK</div>
-
-  <div style="display:flex; gap:20px;">
-    <a href="/index.html" style="color:#94a3b8;">Home</a>
-    <a href="/check.html" style="color:#94a3b8;">Vehicle Check</a>
-    <a href="/pricing.html" style="color:white;">Pricing</a>
-    <a href="/faq.html" style="color:#94a3b8;">FAQ</a>
+<div class="nav">
+  <a href="index.html">
+    <img src="./mylogo/logo.png" style="height:90px;">
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="check.html">Vehicle Check</a>
+    <a href="pricing.html" class="active">Pricing</a>
+    <a href="faq.html">FAQ</a>
   </div>
 </div>
 
-<h1 style="margin-top:60px;">Simple, honest pricing</h1>
+<!-- HEADER -->
+<h1 style="margin-top:60px; font-size:36px;">
+  Simple, honest pricing
+</h1>
+<p style="color:#6b7280;">
+  Choose the level of detail you need
+</p>
+<!-- PRICING -->
+<div class="pricing-container">
 
-<div style="display:flex; justify-content:center; gap:20px; margin-top:40px;">
-
-  <div style="background:#111827; padding:20px; border-radius:12px; width:250px;">
+  <!-- BASIC -->
+  <div class="card">
     <h3>Basic</h3>
-    <h1 style="color:#00c853;">FREE</h1>
+    <h1 class="price-green">FREE</h1>
+    <p style="color:#6b7280;">Basic DVLA data</p>
+    <button class="btn" onclick="go('basic')">Start Free</button>
   </div>
 
-  <div style="background:#1e3a8a; padding:20px; border-radius:12px; width:250px;">
+  <!-- STANDARD -->
+  <div class="card">
     <h3>Standard</h3>
     <h1>£4.99</h1>
+    <p style="color:#6b7280;">Extended vehicle details</p>
+    <button class="btn" onclick="go('standard')">Select</button>
   </div>
 
-  <div style="background:#111827; padding:20px; border-radius:12px; width:250px;">
+  <!-- PREMIUM -->
+  <div class="card">
     <h3>Premium</h3>
     <h1>£9.99</h1>
+    <p style="color:#6b7280;">Full history + AI insights</p>
+    <button class="btn" onclick="go('premium')">Select</button>
   </div>
-
 </div>
 
-<!-- 🔻 FOOTER -->
-<div style="
-  background:#020617;
-  padding:60px 40px 30px;
-  margin-top:130px;
-  color:#94a3b8;
-">
+<!-- FOOTER -->
+<footer style="background:#f9fafb; padding:60px 20px 30px; margin-top:60px; border-top:1px solid #e5e7eb;">
+  
+  <div style="max-width:1100px; margin:auto; display:flex; flex-wrap:wrap; gap:40px; justify-content:space-between;">
 
-  <div style="
-    display:flex;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    gap:40px;
-  ">
-
-    <!-- LEFT -->
-    <div style="max-width:400px;">
-      <div style="font-size:18px; font-weight:bold; color:white;">
-        🚗 AutoCheck UK
-      </div>
-
-      <p style="margin-top:15px;">
-        Trusted vehicle history checks for UK buyers and sellers. 
-        We source data from official DVLA records, MOT databases, 
-        and financial registries.
+    <!-- BRAND -->
+    <div style="flex:1; min-width:220px;">
+      <h2 style="color:#16a34a; margin-bottom:10px;">CheapRegCheck</h2>
+      <p style="color:#6b7280; font-size:14px;">
+        UK vehicle history checks powered by trusted data sources. 
+        Check before you buy and avoid costly mistakes.
       </p>
-
-      <div style="margin-top:15px; font-size:13px;">
-        🔒 GDPR Compliant &nbsp;&nbsp; 🔐 SSL Encrypted
-      </div>
     </div>
 
-    <!-- SERVICES -->
-    <div>
-      <h4 style="color:white;">Services</h4>
-      <p><a href="/check.html" style="color:#94a3b8; text-decoration:none;">Vehicle Check</a></p>
-      <p><a href="/pricing.html" style="color:#94a3b8; text-decoration:none;">Pricing</a></p>
+    <!-- LINKS -->
+    <div style="flex:1; min-width:150px;">
+      <h4>Company</h4>
+      <ul style="list-style:none; padding:0; line-height:28px;">
+        <li><a href="/pricing.html">Pricing</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="/privacy.html">Privacy Policy</a></li>
+      </ul>
     </div>
 
-    <!-- LEGAL -->
-    <div>
-      <h4 style="color:white;">Legal</h4>
-      <p><a href="#" style="color:#94a3b8; text-decoration:none;">Privacy Policy</a></p>
-      <p><a href="#" style="color:#94a3b8; text-decoration:none;">Terms of Service</a></p>
-      <p><a href="#" style="color:#94a3b8; text-decoration:none;">Cookie Policy</a></p>
+    <!-- PRODUCT -->
+    <div style="flex:1; min-width:150px;">
+      <h4>Product</h4>
+      <ul style="list-style:none; padding:0; line-height:28px;">
+        <li><a href="/">Free Car Check</a></li>
+        <li><a href="/check.html">Premium Report</a></li>
+      </ul>
+    </div>
+
+    <!-- TRUST -->
+    <div style="flex:1; min-width:220px;">
+      <h4>Trusted & Secure</h4>
+      <p style="color:#6b7280; font-size:14px;">
+        DVLA Data Verified<br>
+        Secure Payments via Stripe<br>
+        Instant Digital Reports
+      </p>
     </div>
 
   </div>
+
+  <!-- DIVIDER -->
+  <div style="border-top:1px solid #e5e7eb; margin:40px 0;"></div>
 
   <!-- BOTTOM -->
-  <div style="
-    border-top:1px solid rgba(255,255,255,0.1);
-    margin-top:30px;
-    padding-top:20px;
-    text-align:center;
-    font-size:13px;
-  ">
-    © 2026 AutoCheck UK. All rights reserved. Data sourced from DVLA, VOSA, and financial registries.
+  <div style="text-align:center; color:#6b7280; font-size:13px;">
+    © 2026 CheapRegCheck UK. All rights reserved.
   </div>
-</div>
 
+</footer>
+
+<script>
+function go(pkg) {
+  const reg = prompt("Enter registration:");
+  if (!reg) return;
+
+  if (pkg === "basic") {
+    window.location.href = `/result.html?reg=${reg}`;
+  } else {
+    window.location.href = `/check.html?reg=${reg}&package=${pkg}`;
+  }
+}
+</script>
 </body>
 </html>

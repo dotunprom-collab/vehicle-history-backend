@@ -1,88 +1,212 @@
 <!DOCTYPE html>
 <html>
 <head>
-
-    <style>
-  a:hover {
-    color: rgb(6, 95, 57) !important;
-  }
-</style>
-    
   <title>Privacy Policy - AutoCheck UK</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      margin: 0;
-      font-family: Arial;
-      background: #0b1220;
-      color: white;
+      margin:0;
+      font-family: Arial, sans-serif;
+      background:#ffffff;
+      color:#111827;
     }
 
+    a {
+      text-decoration:none;
+      color:#6b7280;
+    }
+
+    a:hover {
+      color:#16a34a;
+    }
+
+    /* NAVBAR */
+    .nav {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:15px 25px;
+      border-bottom:1px solid #e5e7eb;
+      background:white;
+      position:sticky;
+      top:0;
+      z-index:1000;
+    }
+
+    .nav img {
+      height:45px;
+    }
+
+    .nav-links {
+      display:flex;
+      gap:20px;
+    }
+
+    .cta {
+      background:#16a34a;
+      color:white !important;
+      padding:8px 14px;
+      border-radius:8px;
+    }
+
+    /* MOBILE */
+    .menu-btn {
+      display:none;
+      font-size:22px;
+      cursor:pointer;
+    }
+
+    @media(max-width:768px) {
+      .nav-links {
+        display:none;
+        flex-direction:column;
+        position:absolute;
+        top:60px;
+        right:20px;
+        background:white;
+        border:1px solid #e5e7eb;
+        padding:15px;
+        border-radius:10px;
+      }
+
+      .nav-links.show {
+        display:flex;
+      }
+
+      .menu-btn {
+        display:block;
+      }
+    }
+
+    /* PAGE */
     .container {
-      max-width: 900px;
-      margin: 80px auto;
-      padding: 30px;
-      background: #111827;
-      border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      max-width:900px;
+      margin:40px auto;
+      padding:30px 20px;
     }
 
-    h1 { font-size: 32px; }
-    h2 { margin-top: 25px; }
-    p, li { color: #94a3b8; line-height: 1.6; }
+    .card {
+      background:white;
+      border:1px solid #e5e7eb;
+      border-radius:16px;
+      padding:30px;
+    }
 
-    ul { padding-left: 20px; }
+    h1 { font-size:32px; }
+    h2 { margin-top:25px; }
 
-    a { color: #38bdf8; text-decoration: none; }
+    p, li {
+      color:#6b7280;
+      line-height:1.6;
+    }
+
+    ul {
+      padding-left:20px;
+    }
+
+    /* FOOTER */
+    .footer {
+      background:linear-gradient(to bottom, #ffffff, #f3f4f6);
+      border-top:1px solid #e5e7eb;
+      padding:30px 20px;
+      margin-top:60px;
+    }
+
+    .footer-inner {
+      max-width:1100px;
+      margin:auto;
+      display:flex;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      gap:20px;
+      align-items:center;
+    }
+
+    .footer-links {
+      display:flex;
+      gap:20px;
+      flex-wrap:wrap;
+    }
+
+    .footer-links a:hover {
+      color:#16a34a;
+    }
+
+    @media(max-width:768px){
+      .footer-inner {
+        flex-direction:column;
+        text-align:center;
+      }
+    }
   </style>
 </head>
-
 <body>
-
 <!-- NAVBAR -->
-<div style="display:flex; justify-content:space-between; padding:20px 40px;">
-  <div>🚗 AutoCheck UK</div>
-  <div style="display:flex; gap:20px;">
-    <a href="/index.html">Home</a>
-    <a href="/check.html">Vehicle Check</a>
-    <a href="/pricing.html">Pricing</a>
-    <a href="/faq.html">FAQ</a>
-    <a href="/contact.html">Contact</a>
+<div class="nav">
+  <a href="index.html">
+    <img src="./mylogo/logo.png">
+  </a>
+  <div class="menu-btn" onclick="toggleMenu()">☰</div>
+    <div class="nav-links" id="menu">
+    <a href="index.html">Home</a>
+    <a href="pricing.html">Pricing</a>
+    <a href="contact.html">Contact</a>
+    <a href="check.html" class="cta">Check Vehicle</a>
   </div>
 </div>
-
 <!-- CONTENT -->
 <div class="container">
+  <div class="card">
+<h1>Privacy Policy</h1>
+<p>Last updated: 2026</p>
 
-  <h1>Privacy Policy</h1>
-  <p>Last updated: 2026</p>
+<h2>1. Information We Collect</h2>
+<p>We collect vehicle registration numbers and user-submitted data.</p>
 
-  <h2>1. Information We Collect</h2>
-  <p>We collect vehicle registration numbers and user-submitted data.</p>
+<h2>2. How We Use Data</h2>
+<ul>
+  <li>Provide vehicle reports</li>
+  <li>Process payments via Stripe</li>
+  <li>Improve services</li>
+</ul>
 
-  <h2>2. How We Use Data</h2>
-  <ul>
-    <li>Provide vehicle reports</li>
-    <li>Process payments via Stripe</li>
-    <li>Improve services</li>
-  </ul>
+<h2>3. Data Sources</h2>
+<p>We use DVLA, MOT records, and financial registries.</p>
 
-  <h2>3. Data Sources</h2>
-  <p>We use DVLA, MOT records, and financial registries.</p>
+<h2>4. Payments</h2>
+<p>All payments are securely processed by Stripe.</p>
 
-  <h2>4. Payments</h2>
-  <p>All payments are securely processed by Stripe.</p>
+<h2>5. GDPR Compliance</h2>
+<p>We comply with UK GDPR regulations.</p>
 
-  <h2>5. GDPR Compliance</h2>
-  <p>We comply with UK GDPR regulations.</p>
-
-  <h2>6. Contact</h2>
-  <p>support@autocheckuk.com</p>
-
+<h2>6. Contact</h2>
+<p>support@cheapregcheck.com</p>
+  </div>
+</div>
+<!-- FOOTER -->
+<div class="footer">
+  <div class="footer-inner">
+<div style="font-weight:600;">
+  © 2026 AutoCheck UK
 </div>
 
-<!-- FOOTER -->
-<!-- paste your footer here -->
+<div class="footer-links">
+  <a href="/privacy.html">Privacy</a>
+  <a href="/terms.html">Terms</a>
+  <a href="/cookies.html">Cookies</a>
+  <a href="/faq.html">FAQ</a>
+</div>
 
+<div style="font-size:12px;">
+  🔒 Secure • GDPR Compliant
+</div>
+  </div>
+<script>
+function toggleMenu() {
+  document.getElementById("menu").classList.toggle("show");
+}
+</script>
 </body>
 </html>
+
+
