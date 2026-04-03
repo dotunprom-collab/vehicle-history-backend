@@ -48,8 +48,8 @@ export class PaymentService {
             quantity: 1,
           },
         ],
-        success_url: `https://your-frontend-domain.com/success.html?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `https://your-frontend-domain.com/check.html`,
+        success_url: `https://vehicle-history-backend-production.up.railway.app/success.html?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `https://vehicle-history-backend-production.up.railway.app/check.html`,
         metadata: { reg, pkg },
       });
 
