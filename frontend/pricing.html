@@ -2,6 +2,8 @@
 <html>
 <head>
   <title>Pricing - CheapRegCheck UK</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     body {
       margin:0;
@@ -11,9 +13,7 @@
       text-align:center;
     }
 
-    a {
-      text-decoration:none;
-    }
+    a { text-decoration:none; }
 
     a:hover {
       color:#16a34a !important;
@@ -50,7 +50,7 @@
       font-weight:bold;
     }
 
-    /* PRICING CARDS */
+    /* PRICING */
     .pricing-container {
       display:flex;
       justify-content:center;
@@ -64,8 +64,10 @@
       border:1px solid #e5e7eb;
       padding:25px;
       border-radius:16px;
-      width:260px;
+      width:300px;
+      text-align:left;
       transition:0.2s;
+      position:relative;
     }
 
     .card:hover {
@@ -73,15 +75,42 @@
       box-shadow:0 10px 30px rgba(0,0,0,0.08);
     }
 
+    .highlight {
+      border:2px solid #16a34a;
+    }
+
+    .badge {
+      position:absolute;
+      top:-10px;
+      right:15px;
+      background:#16a34a;
+      color:white;
+      padding:5px 10px;
+      font-size:12px;
+      border-radius:6px;
+    }
+
     .price-green {
       color:#16a34a;
     }
 
-    .btn {
+    .features {
       margin-top:15px;
-      padding:10px 20px;
+      font-size:14px;
+      color:#6b7280;
+      line-height:24px;
+    }
+
+    .features span {
+      display:block;
+    }
+
+    .btn {
+      margin-top:20px;
+      padding:12px;
+      width:100%;
       border:none;
-      border-radius:8px;
+      border-radius:10px;
       background:#16a34a;
       color:white;
       font-weight:bold;
@@ -93,24 +122,25 @@
     }
 
     /* FOOTER */
-    .footer {
-      background:#111827;
-      color:#94a3b8;
-      padding:60px 40px;
-      margin-top:120px;
+    footer {
+      background:#f9fafb;
+      padding:60px 20px 30px;
+      margin-top:60px;
+      border-top:1px solid #e5e7eb;
     }
   </style>
 </head>
+
 <body>
 
 <!-- NAVBAR -->
 <div class="nav">
   <a href="index.html">
-    <img src="./mylogo/logo.png" style="height:90px;">
+    <img src="./mylogo/logo.png" style="height:80px;">
   </a>
   <div class="nav-links">
     <a href="index.html">Home</a>
-    <a href="check.html">Vehicle Check</a>
+    <!-- <a href="check.html">Vehicle Check</a> -->
     <a href="pricing.html" class="active">Pricing</a>
     <a href="faq.html">FAQ</a>
   </div>
@@ -123,100 +153,111 @@
 <p style="color:#6b7280;">
   Choose the level of detail you need
 </p>
+
 <!-- PRICING -->
 <div class="pricing-container">
 
-  <!-- BASIC -->
+  <!-- FREE -->
   <div class="card">
-    <h3>Basic</h3>
+    <h3>Free Check</h3>
     <h1 class="price-green">FREE</h1>
-    <p style="color:#6b7280;">Basic DVLA data</p>
-    <button class="btn" onclick="go('basic')">Start Free</button>
+
+    <div class="features">
+      <span>✔ DVLA vehicle identity</span>
+      <span>✔ Make, model, fuel, colour</span>
+      <span>✔ MOT status & expiry</span>
+      <span>✔ Mileage snapshot</span>
+      <span>✔ Tax status</span>
+      <span>✔ Owner count</span>
+      <span>✔ Basic AI summary</span>
+      <span style="color:red;">🔒 Hidden issues not included</span>
+    </div>
+
+    <button class="btn" onclick="go('basic')">Select</button>
   </div>
 
   <!-- STANDARD -->
   <div class="card">
-    <h3>Standard</h3>
-    <h1>£4.99</h1>
-    <p style="color:#6b7280;">Extended vehicle details</p>
+    <h3>Standard Check</h3>
+    <h1 style="color: #F8D347;">£4.99</h1>
+
+    <div class="features">
+      <span>✔ Everything in Free</span>
+      <span>✔ Full MOT history</span>
+      <span>✔ Mileage anomaly detection</span>
+      <span>✔ Import/export status</span>
+      <span>✔ Scrapped / salvage status</span>
+      <span>✔ Taxi usage check</span>
+      <span>✔ VIN & engine checks</span>
+      <span>✔ ULEZ & emissions</span>
+      <span>✔ Safety recalls</span>
+      <span>✔ Risk score & insights</span>
+      <span style="color:#16a34a;">✔ Better purchase confidence</span>
+      <span style="color:red;">🔒 Finance & stolen check locked</span>
+    </div>
+
     <button class="btn" onclick="go('standard')">Select</button>
   </div>
 
   <!-- PREMIUM -->
-  <div class="card">
-    <h3>Premium</h3>
-    <h1>£9.99</h1>
-    <p style="color:#6b7280;">Full history + AI insights</p>
+  <div class="card highlight">
+    <div class="badge">BEST VALUE</div>
+
+    <style>
+  .new-price {
+    color: #f6c927;
+    margin-left: 10px;
+  }
+
+  .old-price {
+    text-decoration: line-through;
+    color: #0e0e0e;
+    font-size: 20px;
+  }
+  
+</style>
+
+<h3>Full History Check</h3>
+<h1>
+  <span class="new-price">£7.99</span>
+  <span class="old-price">£9.99</span>
+  
+</h1>
+
+    <div class="features">
+      <span>✔ Everything in Standard</span>
+      <span>✔ Finance check (Experian backed)</span>
+      <span>✔ Stolen vehicle check</span>
+      <span>✔ Insurance write-off history</span>
+      <span>✔ Plate & colour changes</span>
+      <span>✔ Salvage auction records</span>
+      <span>✔ Dealer & trade valuation</span>
+      <span>✔ Mileage-adjusted valuation</span>
+      <span>✔ Full specification + extras</span>
+      <span>✔ Advanced AI risk score</span>
+      <span>✔ Negotiation insights</span>
+      <span>✔ Ownership risk analysis</span>
+      <span style="color:#16a34a;">✔ Highest confidence before buying</span>
+    </div>
+
     <button class="btn" onclick="go('premium')">Select</button>
   </div>
+
 </div>
 
 <!-- FOOTER -->
-<footer style="background:#f9fafb; padding:60px 20px 30px; margin-top:60px; border-top:1px solid #e5e7eb;">
-  
-  <div style="max-width:1100px; margin:auto; display:flex; flex-wrap:wrap; gap:40px; justify-content:space-between;">
-
-    <!-- BRAND -->
-    <div style="flex:1; min-width:220px;">
-      <h2 style="color:#16a34a; margin-bottom:10px;">CheapRegCheck</h2>
-      <p style="color:#6b7280; font-size:14px;">
-        UK vehicle history checks powered by trusted data sources. 
-        Check before you buy and avoid costly mistakes.
-      </p>
-    </div>
-
-    <!-- LINKS -->
-    <div style="flex:1; min-width:150px;">
-      <h4>Company</h4>
-      <ul style="list-style:none; padding:0; line-height:28px;">
-        <li><a href="/pricing.html">Pricing</a></li>
-        <li><a href="/faq.html">FAQ</a></li>
-        <li><a href="/privacy.html">Privacy Policy</a></li>
-      </ul>
-    </div>
-
-    <!-- PRODUCT -->
-    <div style="flex:1; min-width:150px;">
-      <h4>Product</h4>
-      <ul style="list-style:none; padding:0; line-height:28px;">
-        <li><a href="/">Free Car Check</a></li>
-        <li><a href="/check.html">Premium Report</a></li>
-      </ul>
-    </div>
-
-    <!-- TRUST -->
-    <div style="flex:1; min-width:220px;">
-      <h4>Trusted & Secure</h4>
-      <p style="color:#6b7280; font-size:14px;">
-        DVLA Data Verified<br>
-        Secure Payments via Stripe<br>
-        Instant Digital Reports
-      </p>
-    </div>
-
+<footer>
+  <div style="max-width:1100px; margin:auto; text-align:center; color:#6b7280;">
+    © 2026 CheapRegCheck UK • Secure Payments • DVLA Verified Data
   </div>
-
-  <!-- DIVIDER -->
-  <div style="border-top:1px solid #e5e7eb; margin:40px 0;"></div>
-
-  <!-- BOTTOM -->
-  <div style="text-align:center; color:#6b7280; font-size:13px;">
-    © 2026 CheapRegCheck UK. All rights reserved.
-  </div>
-
 </footer>
 
 <script>
 function go(pkg) {
-  const reg = prompt("Enter registration:");
-  if (!reg) return;
-
-  if (pkg === "basic") {
-    window.location.href = `/result.html?reg=${reg}`;
-  } else {
-    window.location.href = `/check.html?reg=${reg}&package=${pkg}`;
-  }
+  // 👉 Redirect ALL selections back to homepage
+  window.location.href = "/index.html";
 }
 </script>
+
 </body>
 </html>

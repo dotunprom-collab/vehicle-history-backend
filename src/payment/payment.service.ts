@@ -62,7 +62,7 @@ export class PaymentService {
   }
 
   // ✅ GET SESSION
-  async getSession(sessionId: string) {
+    async getSession(sessionId: string) {
     try {
       if (!this.stripe) {
         return { error: 'Payments not configured' };

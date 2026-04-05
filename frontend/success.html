@@ -121,6 +121,60 @@
     .btn:hover {
       background:#15803d;
     }
+
+    .section {
+  margin-top:20px;
+}
+
+.hero {
+  background:white;
+  border-radius:16px;
+  padding:25px;
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  box-shadow:0 5px 20px rgba(0,0,0,0.05);
+}
+
+.reg {
+  font-size:28px;
+  font-weight:bold;
+}
+
+.sub {
+  color:#6b7280;
+}
+
+.value-box {
+  font-size:28px;
+  font-weight:bold;
+  color:#16a34a;
+}
+
+.insight {
+  background:#f3f4f6;
+  padding:10px;
+  border-radius:8px;
+  margin-top:8px;
+}
+
+.badge {
+  padding:6px 12px;
+  border-radius:20px;
+  font-size:12px;
+  margin-top:5px;
+  display:inline-block;
+}
+
+.low { background:#dcfce7; color:#166534; }
+.medium { background:#fef9c3; color:#854d0e; }
+.high { background:#fee2e2; color:#991b1b; }
+
+.risk-score {
+  font-size:32px;
+  font-weight:bold;
+}
+
   </style>
 </head>
 <body>
@@ -141,130 +195,207 @@
 <div class="container">
   <div id="report">Loading premium report...</div>
 </div>
+
 <script>
 const API = "https://vehicle-history-backend-production.up.railway.app";
 
 const urlParams = new URLSearchParams(window.location.search);
 const sessionId = urlParams.get("session_id");
+const regFromDashboard = urlParams.get("reg");
+
+let globalReg = null;
 
 /* MOBILE MENU */
 function toggleMenu() {
-  document.getElementById("menu").classList.toggle("show");
+  const menu = document.getElementById("menu");
+  if (menu) menu.classList.toggle("show");
 }
 
 async function loadReport() {
-
   try {
 
-    const res1 = await fetch(`${API}/payment/success?session_id=${sessionId}`);
-    const sessionData = await res1.json();
-    const reg = sessionData.reg;
+    // 🔐 LOCK PAGE
+    if (!sessionId) {
+      window.location.href = "/";
+      return;
+    }
 
+    const reportEl = document.getElementById("report");
+
+    if (!reportEl) {
+      console.error("❌ #report element not found");
+      return;
+    }
+
+    // ✅ GET REG FROM STRIPE
+    console.log("SESSION ID:", sessionId);
+
+    const res1 = await fetch(`${API}/payment/success?session_id=${sessionId}`);
+
+    if (!res1.ok) {
+      reportEl.innerHTML = "❌ Failed to verify payment";
+      return;
+    }
+
+    const sessionData = await res1.json();
+
+    console.log("SESSION DATA:", sessionData);
+
+    const reg = sessionData?.reg;
+
+    if (!reg) {
+      reportEl.innerHTML = "❌ Payment session invalid";
+      return;
+    }
+
+    localStorage.setItem("paid_" + reg, "true");
+    globalReg = reg;
+
+    // ✅ FETCH FULL REPORT
     const res2 = await fetch(`${API}/vehicle/full`, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ registration: reg })
     });
+
+    if (!res2.ok) {
+      reportEl.innerHTML = "❌ Failed to load report";
+      return;
+    }
 
     const data = await res2.json();
 
     if (data.error) {
-      document.getElementById("report").innerHTML = `<p style="color:red;">${data.error}</p>`;
+      reportEl.innerHTML = `<p style="color:red;">${data.error}</p>`;
       return;
     }
 
-    let riskColor = "#16a34a";
-    if (data.riskScore > 60) riskColor = "red";
-    else if (data.riskScore > 30) riskColor = "orange";
+    // ✅ RISK LOGIC
+    let riskClass = "low";
+    let riskText = "LOW RISK";
 
-    document.getElementById("report").innerHTML = `
+    if (data.riskScore > 60) {
+      riskClass = "high";
+      riskText = "HIGH RISK";
+    } else if (data.riskScore > 30) {
+      riskClass = "medium";
+      riskText = "MEDIUM RISK";
+    }
 
-      <!-- TOP -->
-      <div class="card">
-
-        <div style="display:flex; justify-content:space-between; flex-wrap:wrap;">
-
-          <div>
-            <h2>${data.make} ${data.model}</h2>
-            <p style="color:#6b7280;">${data.fuel} • ${data.colour}</p>
-            <h1>${data.reg}</h1>
-          </div>
-
-          <div style="text-align:center;">
-            <div style="font-size:28px; font-weight:bold; color:${riskColor};">
-              ${data.riskScore}/100
-            </div>
-            <div style="color:#6b7280;">Risk Score</div>
-          </div>
-
+    // ✅ RENDER UI
+    reportEl.innerHTML = `
+      <div class="hero">
+        <div>
+          <div class="reg">${data.reg}</div>
+          <div class="sub">${data.make} ${data.model}</div>
+          <div class="sub">${data.fuel} • ${data.colour}</div>
         </div>
 
+        <div>
+          <div class="risk-score">${data.riskScore}</div>
+          <div class="badge ${riskClass}">${riskText}</div>
+        </div>
       </div>
 
-      <!-- GRID -->
-      <div class="grid">
-
-        ${card("Mileage", data.mileage + " miles")}
-        ${card("Engine", data.engineSize)}
-        ${card("Body Style", data.bodyStyle)}
-        ${card("First Registered", data.year)}
-
-        ${statusCard("MOT Status", data.motValid)}
-        ${statusCard("Tax Status", data.taxValid)}
-        ${statusCard("Mileage Issues", !data.mileageIssue)}
-        ${statusCard("Finance Check", data.finance !== "outstanding")}
-        ${statusCard("Stolen Check", data.stolen !== "yes")}
-        ${statusCard("Write-off Check", data.writeOff !== "yes")}
-
+      <div class="section card">
+        <h3>Vehicle Details</h3>
+        <div class="grid">
+          ${info("Make", data.make)}
+          ${info("Model", data.model)}
+          ${info("Fuel", data.fuel)}
+          ${info("Colour", data.colour)}
+          ${info("Year", data.year)}
+          ${info("Mileage", data.mileage ? data.mileage + " miles" : "N/A")}
+        </div>
       </div>
 
-      <!-- VALUE -->
-      <div class="card" style="margin-top:20px; text-align:center;">
-        <h3>💰 Estimated Value</h3>
-        <h1 class="green">£${data.estimatedValue || "N/A"}</h1>
+      <div class="section card">
+        <h3>Key Checks</h3>
+        <div class="grid">
+          ${status("Finance", data.finance !== "outstanding")}
+          ${status("Stolen", data.stolen !== "yes")}
+          ${status("Write-off", data.writeOff !== "yes")}
+          ${status("MOT", data.motValid)}
+          ${status("Tax", data.taxValid)}
+        </div>
       </div>
 
-      <!-- AI -->
-      <div class="card" style="margin-top:20px;">
-        <h3>🤖 AI Insights</h3>
+      <div class="section card">
+        <h3>Risk Summary</h3>
+        <p><strong>Score:</strong> ${data.riskScore}/100</p>
+        <p><strong>Assessment:</strong> ${riskText}</p>
+      </div>
 
+      <div class="section card">
+        <h3>Estimated Value</h3>
+        <div class="value-box">£${data.estimatedValue || "N/A"}</div>
+      </div>
+
+      <div class="section card">
+        <h3>Summary Insights</h3>
         ${
-          data.insights && data.insights.length
-            ? data.insights.map(i => `<div style="margin-top:10px;">${i}</div>`).join("")
-            : "<div>No insights available</div>"
+          data.insights?.length
+            ? data.insights.map(i => `<div class="insight">• ${i}</div>`).join("")
+            : "<p>No insights available</p>"
         }
       </div>
 
-      <!-- MOT -->
-      <div class="card" style="margin-top:20px;">
-        <h3>MOT History</h3>
-        ${renderMot(data.motHistory)}
-      </div>
-
-      <!-- CTA -->
-      <div style="margin-top:30px; text-align:center;">
-        <button class="btn">📄 Download PDF Report</button>
-      </div>
-
+      <button class="btn" onclick="downloadPDF()">📄 Download PDF Report</button>
     `;
-  } catch {
-    document.getElementById("report").innerHTML = "❌ Server error";
+
+  } catch (err) {
+    console.error("❌ LOAD ERROR:", err);
+
+    const reportEl = document.getElementById("report");
+    if (reportEl) {
+      reportEl.innerHTML = "❌ Server error";
+    }
   }
 }
 
-function card(title, value) {
+/* DOWNLOAD PDF */
+async function downloadPDF() {
+  const reg = globalReg;
+
+  if (!reg) {
+    alert("Missing registration");
+    return;
+  }
+
+  const res = await fetch(`${API}/vehicle/pdf`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ registration: reg })
+  });
+
+  if (!res.ok) {
+    alert("Failed to generate PDF");
+    return;
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${reg}-report.pdf`;
+  a.click();
+}
+
+/* HELPERS */
+function info(label, value) {
   return `
     <div class="small-card">
-      <div style="color:#6b7280;">${title}</div>
-      <div style="font-weight:bold;">${value}</div>
+      <div style="color:#6b7280;">${label}</div>
+      <div style="font-weight:bold;">${value || "N/A"}</div>
     </div>
   `;
 }
 
-function statusCard(title, ok) {
+function status(label, ok) {
   return `
     <div class="small-card">
-      <div style="color:#6b7280;">${title}</div>
+      <div style="color:#6b7280;">${label}</div>
       <div style="font-weight:bold; color:${ok ? "#16a34a" : "red"};">
         ${ok ? "✔ Clear" : "⚠ Issue"}
       </div>
@@ -272,21 +403,10 @@ function statusCard(title, ok) {
   `;
 }
 
-function renderMot(mot) {
-  if (!mot || mot.length === 0) {
-    return "<p>No MOT history available</p>";
-  }
-
-  return mot.slice(0,5).map(m => `
-    <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #e5e7eb;">
-      <span>${m.Date || "N/A"}</span>
-      <span>${m.Result || "N/A"}</span>
-      <span>${m.Odometer || ""} miles</span>
-    </div>
-  `).join("");
-}
-
-loadReport();
+/* ✅ IMPORTANT FIX: WAIT FOR DOM */
+document.addEventListener("DOMContentLoaded", () => {
+  loadReport();
+});
 </script>
 </body>
 </html>
