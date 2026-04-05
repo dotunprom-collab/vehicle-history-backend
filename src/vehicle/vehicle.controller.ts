@@ -27,11 +27,30 @@ export class VehicleController {
         return res.status(400).json({ error: 'Registration required' });
       }
 
-      const data: any = await this.vehicleService.getFull(body.registration);
+      let data: any = await this.vehicleService.getFull(body.registration);
 
       if (!data || data.error) {
-        return res.status(400).json({ error: 'Failed to generate report' });
-      }
+  console.error("❌ PDF DATA ERROR:", data);
+
+  // ✅ FALLBACK (CRITICAL FIX)
+  data = {
+    reg: body.registration,
+    make: "Unavailable",
+    model: "Unavailable",
+    fuel: "Unavailable",
+    colour: "Unavailable",
+    year: "N/A",
+    mileage: "N/A",
+    finance: "unknown",
+    stolen: "unknown",
+    writeOff: "unknown",
+    motValid: false,
+    taxValid: false,
+    riskScore: 0,
+    estimatedValue: "N/A",
+    insights: ["Unable to load full data — please try again"]
+  };
+}
 
       const doc = new PDFDocument();
 

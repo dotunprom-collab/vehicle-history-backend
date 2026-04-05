@@ -1,1 +1,1 @@
-{"message":"Cannot POST /vehicle/pdf","error":"Not Found","statusCode":404}
+{"error":"Failed to generate report"}
