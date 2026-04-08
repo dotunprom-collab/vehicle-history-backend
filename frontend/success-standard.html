@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Premium Vehicle Report</title>
+  <style>
+    body {
+      margin:0;
+      font-family: Arial, sans-serif;
+      background:#ffffff;
+      color:#111827;
+    }
+
+    /* NAVBAR */
+    .nav {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:15px 25px;
+      border-bottom:1px solid #e5e7eb;
+      background:white;
+      position:sticky;
+      top:0;
+      z-index:1000;
+    }
+
+    .nav img {
+      height:45px;
+    }
+
+    .nav-links {
+      display:flex;
+      gap:20px;
+    }
+
+    .nav-links a {
+      text-decoration:none;
+      color:#6b7280;
+      font-size:14px;
+    }
+
+    .nav-links a:hover {
+      color:#16a34a;
+    }
+
+    /* MOBILE */
+    .menu-btn {
+      display:none;
+      font-size:22px;
+      cursor:pointer;
+    }
+
+    @media(max-width:768px) {
+      .nav-links {
+        display:none;
+        flex-direction:column;
+        position:absolute;
+        top:60px;
+        right:20px;
+        background:white;
+        border:1px solid #e5e7eb;
+        padding:15px;
+        border-radius:10px;
+      }
+
+      .nav-links.show {
+        display:flex;
+      }
+
+      .menu-btn {
+        display:block;
+      }
+    }
+
+    /* MAIN */
+    .container {
+      max-width:1000px;
+      margin:auto;
+      padding:30px 20px;
+    }
+
+    .card {
+      background:white;
+      border:1px solid #e5e7eb;
+      padding:20px;
+      border-radius:16px;
+    }
+
+    .grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:20px;
+      margin-top:20px;
+    }
+
+    @media(max-width:768px) {
+      .grid {
+        grid-template-columns:1fr;
+      }
+    }
+
+    .small-card {
+      border:1px solid #e5e7eb;
+      padding:15px;
+      border-radius:10px;
+    }
+
+    .green {
+      color:#16a34a;
+    }
+
+    .btn {
+      padding:15px 30px;
+      background:#16a34a;
+      border:none;
+      border-radius:10px;
+      color:white;
+      font-size:16px;
+      cursor:pointer;
+    }
+
+    .btn:hover {
+      background:#15803d;
+    }
+
+    .section {
+  margin-top:20px;
+}
+
+.hero {
+  background:white;
+  border-radius:16px;
+  padding:25px;
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  box-shadow:0 5px 20px rgba(0,0,0,0.05);
+}
+
+.reg {
+  font-size:28px;
+  font-weight:bold;
+}
+
+.sub {
+  color:#6b7280;
+}
+
+.value-box {
+  font-size:28px;
+  font-weight:bold;
+  color:#16a34a;
+}
+
+.insight {
+  background:#f3f4f6;
+  padding:10px;
+  border-radius:8px;
+  margin-top:8px;
+}
+
+.badge {
+  padding:6px 12px;
+  border-radius:20px;
+  font-size:12px;
+  margin-top:5px;
+  display:inline-block;
+}
+
+.low { background:#dcfce7; color:#166534; }
+.medium { background:#fef9c3; color:#854d0e; }
+.high { background:#fee2e2; color:#991b1b; }
+
+.risk-score {
+  font-size:32px;
+  font-weight:bold;
+}
+
+  </style>
+</head>
+<body>
+<!-- NAVBAR -->
+<div class="nav">
+  <a href="index.html">
+    <img src="./mylogo/logo.png" style="height:90px;">
+  </a>
+  <div class="menu-btn" onclick="toggleMenu()">☰</div>
+  <div class="nav-links" id="menu">
+    <a href="index.html">Home</a>
+    <a href="pricing.html">Pricing</a>
+    <a href="contact.html">Contact</a>
+    <a href="check.html">Check Vehicle</a>
+  </div>
+</div>
+<!-- MAIN -->
+<div class="container">
+  <div id="report">Loading premium report...</div>
+</div>
+
+<script>
+const API = "https://vehicle-history-backend-production.up.railway.app";
+
+const urlParams = new URLSearchParams(window.location.search);
+const sessionId = urlParams.get("session_id");
+const regFromDashboard = urlParams.get("reg");
+
+let globalReg = null;
+
+/* MOBILE MENU */
+function toggleMenu() {
+  const menu = document.getElementById("menu");
+  if (menu) menu.classList.toggle("show");
+}
+
+async function loadReport() {
+  try {
+
+    // 🔐 LOCK PAGE
+    if (!sessionId) {
+      window.location.href = "/";
+      return;
+    }
+
+    const reportEl = document.getElementById("report");
+
+    if (!reportEl) {
+      console.error("❌ #report element not found");
+      return;
+    }
+
+    // ✅ GET REG FROM STRIPE
+    console.log("SESSION ID:", sessionId);
+
+    const res1 = await fetch(`${API}/payment/success?session_id=${sessionId}`);
+
+    if (!res1.ok) {
+      reportEl.innerHTML = "❌ Failed to verify payment";
+      return;
+    }
+
+    const sessionData = await res1.json();
+
+    console.log("SESSION DATA:", sessionData);
+
+    const reg = sessionData?.reg;
+
+    globalReg = reg;
+
+    if (!reg) {
+      reportEl.innerHTML = "❌ Payment session invalid";
+      return;
+    }
+
+    localStorage.setItem("paid_" + reg, "true");
+    globalReg = reg;
+
+    // ✅ FETCH FULL REPORT
+    const res2 = await fetch(`${API}/vehicle/full`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ registration: reg, paid: false })
+    });
+
+    if (!res2.ok) {
+      reportEl.innerHTML = "❌ Failed to load report";
+      return;
+    }
+
+    const data = await res2.json();
+
+    if (data.error) {
+      reportEl.innerHTML = `<p style="color:red;">${data.error}</p>`;
+      return;
+    }
+
+    // ✅ RISK LOGIC
+    let riskClass = "low";
+    let riskText = "LOW RISK";
+
+    if (data.riskScore > 60) {
+      riskClass = "high";
+      riskText = "HIGH RISK";
+    } else if (data.riskScore > 30) {
+      riskClass = "medium";
+      riskText = "MEDIUM RISK";
+    }
+
+    // ✅ RENDER UI
+    reportEl.innerHTML = `
+
+<!-- HERO -->
+<div class="hero">
+  <div>
+    <div class="reg">${data.vehicle?.reg}</div>
+
+    <div class="sub">
+      ${data.vehicle?.make} ${data.vehicle?.model}
+    </div>
+
+    ${getLogo(data.vehicle?.make) ? `
+      <img src="${getLogo(data.vehicle.make)}"
+           style="height:35px; margin-top:5px;">
+    ` : ""}
+
+    <div class="sub">
+      ${data.vehicle?.fuel} • ${data.vehicle?.colour}
+    </div>
+  </div>
+
+  <div>
+    <div class="badge low">STANDARD REPORT</div>
+  </div>
+</div>
+
+<!-- VEHICLE -->
+<div class="section card">
+  <h3>Vehicle Details</h3>
+  <div class="grid">
+    ${info("Make", data.vehicle?.make)}
+    ${info("Model", data.vehicle?.model)}
+    ${info("Body", data.vehicle?.bodyStyle)}
+    ${info("Engine", data.vehicle?.engineSize)}
+    ${info("Year", data.vehicle?.year)}
+  </div>
+</div>
+
+<!-- MOT -->
+<div class="section card">
+  <h3>MOT Intelligence</h3>
+
+  ${info("Status", data.mot?.status)}
+  ${info("Expiry", data.mot?.due)}
+
+  <div class="insight">
+    ${data.mot?.daysLeft < 30
+      ? "⚠ MOT expires soon"
+      : "✔ MOT valid"}
+  </div>
+</div>
+
+<!-- MILEAGE -->
+<div class="section card">
+  <h3>Mileage Analysis</h3>
+
+  ${info("Current", data.mileage?.current + " miles")}
+  ${info("Per Year", data.mileage?.perYear)}
+
+  <div class="insight">
+    ${data.mileage?.current > 120000
+      ? "⚠ High mileage vehicle"
+      : "✔ Mileage within normal range"}
+  </div>
+</div>
+
+<!-- OWNERSHIP -->
+<div class="section card">
+  <h3>Ownership</h3>
+
+  ${info("Previous Owners", data.ownership?.owners)}
+
+  <div class="insight">
+    ${data.ownership?.owners > 4
+      ? "⚠ High ownership turnover"
+      : "✔ Stable ownership history"}
+  </div>
+</div>
+
+<!-- TAX -->
+<div class="section card">
+  <h3>Tax & Legal</h3>
+
+  ${info("Tax Status", data.tax?.status)}
+  ${info("Annual Tax", "£" + (data.tax?.yearly || "N/A"))}
+</div>
+
+<!-- ENVIRONMENT -->
+<div class="section card">
+  <h3>Environmental Data</h3>
+
+  ${info("CO2 Emissions", data.environment?.co2)}
+  ${info("Euro Status", data.environment?.euro)}
+</div>
+
+<!-- FLAGS -->
+<div class="section card">
+  <h3>Vehicle Flags</h3>
+
+  <div class="grid">
+    ${status("Imported", !data.flags?.imported)}
+    ${status("Scrapped", !data.flags?.scrapped)}
+    ${status("Exported", !data.flags?.exported)}
+  </div>
+</div>
+
+<!-- LOCKED PREMIUM -->
+<div class="section card" style="text-align:center;">
+  <h3>🔒 Premium Checks</h3>
+
+  <div class="grid">
+    ${locked("Finance")}
+    ${locked("Stolen")}
+    ${locked("Write-off")}
+  </div>
+
+  <p style="margin-top:10px;">
+    ⚠ Hidden risks may exist — upgrade recommended
+  </p>
+
+  <button class="btn" onclick="upgrade()">
+    Unlock Full Report
+  </button>
+</div>
+
+<button class="btn" onclick="downloadPDF()" style="margin-top:10px; background:#111827;">
+  📄 Download PDF Report
+</button>
+
+`;
+
+  } catch (err) {
+    console.error("❌ LOAD ERROR:", err);
+
+    const reportEl = document.getElementById("report");
+    if (reportEl) {
+      reportEl.innerHTML = "❌ Server error";
+    }
+  }
+}
+
+/* DOWNLOAD PDF */
+async function downloadPDF() {
+  const reg = globalReg;
+
+  if (!reg) {
+    alert("Missing registration");
+    return;
+  }
+
+  const res = await fetch(`${API}/vehicle/pdf`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ registration: reg, paid: false })
+  });
+
+  if (!res.ok) {
+    alert("Failed to generate PDF");
+    return;
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${reg}-report.pdf`;
+  a.click();
+}
+
+/* HELPERS */
+function getLogo(make) {
+  const logos = {
+    "FORD": "https://logo.clearbit.com/ford.com",
+    "VAUXHALL": "https://logo.clearbit.com/vauxhall.co.uk",
+    "BMW": "https://logo.clearbit.com/bmw.com",
+    "AUDI": "https://logo.clearbit.com/audi.com",
+    "MERCEDES": "https://logo.clearbit.com/mercedes-benz.com",
+  };
+
+  return logos[make?.toUpperCase()] || "";
+}
+
+function info(label, value) {
+  return `
+    <div class="small-card">
+      <div style="color:#6b7280;">${label}</div>
+      <div style="font-weight:bold;">${value || "N/A"}</div>
+    </div>
+  `;
+}
+
+function status(label, ok) {
+  return `
+    <div class="small-card">
+      <div style="color:#6b7280;">${label}</div>
+      <div style="font-weight:bold; color:${ok ? "#16a34a" : "red"};">
+        ${ok ? "✔ Clear" : "⚠ Issue"}
+      </div>
+    </div>
+  `;
+}
+
+function locked(label) {
+  return `
+    <div class="small-card">
+      <div style="color:#6b7280;">${label}</div>
+      <div style="font-weight:bold;">🔒 Locked</div>
+    </div>
+  `;
+}
+
+/* ✅ IMPORTANT FIX: WAIT FOR DOM */
+document.addEventListener("DOMContentLoaded", () => {
+  loadReport();
+});
+</script>
+</body>
+</html>

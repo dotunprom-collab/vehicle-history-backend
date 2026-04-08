@@ -1,10 +1,58 @@
+Resul.html:
+
+
 <!DOCTYPE html>
 <html>
 <head>
   <title>Vehicle Report</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+
+  
   <style>
+  
+.cancel-btn {
+  margin-top: 15px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+
+  background: #F8D347; /* your yellow */
+  color: #111827;
+
+  transition: all 0.25s ease;
+}
+
+/* Hover = lift + glow */
+.cancel-btn:hover {
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 10px 25px rgba(248, 211, 71, 0.6);
+}
+
+/* Click (Apple press effect) */
+.cancel-btn:active {
+  transform: scale(0.96);
+}
+
+/* Subtle pulse to draw attention */
+.cancel-btn {
+  animation: cancelPulse 2.5s infinite;
+}
+
+@keyframes cancelPulse {
+  0% { box-shadow: 0 0 0 0 rgba(248,211,71, 0.5); }
+  70% { box-shadow: 0 0 0 10px rgba(248,211,71, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(248,211,71, 0); }
+}
+
+    #newPrice {
+  transition: all 0.2s ease;
+  display: inline-block;
+}
+
     body {
       margin:0;
       font-family: Arial, sans-serif;
@@ -162,6 +210,130 @@
       font-size:13px;
       color:#6b7280;
     }
+
+    /* 🍏 APPLE GLASS MODAL */
+.modal-box {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  border: 1px solid rgba(255,255,255,0.4);
+  box-shadow: 
+  0 30px 80px rgba(0,0,0,0.25),
+  inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* PREMIUM GREEN GLOW */
+.btn-premium-active {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  color: white;
+  transform: scale(1.03);
+  box-shadow: 0 10px 30px rgba(34,197,94,0.5);
+}
+
+/* DISABLED LOOK */
+.btn-inactive {
+  background: #e5e7eb !important;
+  color: #9ca3af !important;
+  transform: scale(1);
+  box-shadow: none;
+}
+
+/* SMOOTH TRANSITIONS */
+.btn {
+  transition: all 0.25s ease;
+}
+
+/* PREMIUM CARD HIGHLIGHT */
+.premium-highlight {
+  border: 2px solid #22c55e;
+  box-shadow: 0 10px 40px rgba(34,197,94,0.2);
+  transform: scale(1.01);
+}
+
+#newPrice {
+  font-size: 32px;
+  font-weight: 900;
+}
+
+/* 🔥 PREMIUM LOADER OVERLAY */
+.loader-overlay {
+  position: fixed;
+  top:0;
+  left:0;
+  right:0;
+  bottom:0;
+
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(18px);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  z-index:9999;
+}
+
+/* 🍏 GLASS BOX */
+.loader-box {
+  background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(25px);
+
+  padding:40px 30px;
+  border-radius:20px;
+  text-align:center;
+  max-width:420px;
+
+  box-shadow:
+    0 30px 80px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* 🌀 PREMIUM RING */
+.loader-ring {
+  width:60px;
+  height:60px;
+  margin:0 auto 20px;
+
+  border-radius:50%;
+
+  background: conic-gradient(
+    #16a34a,
+    #22c55e,
+    #F8D347,
+    #16a34a
+  );
+
+  -webkit-mask: radial-gradient(circle, transparent 55%, black 56%);
+  mask: radial-gradient(circle, transparent 55%, black 56%);
+
+  animation: spin 1.2s linear infinite;
+}
+
+/* SPIN */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* TEXT */
+.loader-box h2 {
+  font-size:22px;
+  margin-bottom:10px;
+}
+
+.loader-sub {
+  color:#6b7280;
+  font-size:14px;
+}
+
+.loader-time {
+  margin-top:10px;
+  font-size:13px;
+  color:#9ca3af;
+  font-style:italic;
+}
+
   </style>
 </head>
 
@@ -174,7 +346,29 @@
 </div>
 
 <div class="container">
-  <div id="content">Loading...</div>
+  <div id="content">
+
+  <div id="premiumLoader" class="loader-overlay">
+
+    <div class="loader-box">
+
+      <div class="loader-ring"></div>
+
+      <h2>Please be patient while your report is prepared</h2>
+
+      <p class="loader-sub">
+        MyCarMate AI is analysing this vehicle using multiple data sources
+      </p>
+
+      <p class="loader-time">
+        This usually takes a few seconds
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
 </div>
 
 <!-- MODAL -->
@@ -205,7 +399,7 @@
         <div class="badge">BEST</div>
         <h3>Premium</h3>
         <h1>£7.99</h1>
-        <p style="font-size:14px; color:#6b7280;">
+        <p style="font-size:14px; color:#7d806b;">
           ✔ Everything in Standard<br>
           ✔ Finance check<br>
           ✔ Stolen check<br>
@@ -230,76 +424,140 @@
 </div>
 
 <script>
-const API = "https://vehicle-history-backend-production.up.railway.app";
+const API = "http://localhost:3001";
+function getCarImage(make, model) {
+  return `${API}/vehicle/image?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model || "")}`;
+}
 const urlParams = new URLSearchParams(window.location.search);
 const reg = urlParams.get("reg");
 
 async function loadData() {
+
+  console.log("🚀 loadData running...");
 
   if (!reg) {
     document.getElementById("content").innerHTML = "❌ No registration";
     return;
   }
 
-  const res = await fetch(API + "/vehicle/preview", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ registration: reg })
-  });
+  try {
 
-  const data = await res.json();
+    const res = await fetch(API + "/vehicle/preview", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ registration: reg })
+    });
 
-  document.getElementById("content").innerHTML = `
-  <div class="card">
+    const data = await res.json();
+    const imgRes = await fetch(getCarImage(data.make, data.model));
+    const imgData = await imgRes.json();
 
-    <h2 style="font-size:28px;">${data.make} (${data.year})</h2>
+    if (!data || !data.make) {
+      throw new Error("Invalid API response");
+  }
 
-    <!-- FREE DATA -->
-    <div class="features">
-      DVLA vehicle identity<br>
-      Make: ${data.make || "N/A"}<br>
-      Fuel: ${data.fuel || "N/A"}<br>
-      Colour: ${data.colour || "N/A"}<br>
-      MOT expiry: ${data.motDue || "N/A"}<br>
-      Mileage: ${data.mileage || "N/A"}<br>
-      Tax status: ${data.taxStatus || "N/A"}<br>
-      Owners: ${data.owners || "N/A"}<br>
-      Basic AI summary: Vehicle appears normal for age
-    </div>
+    document.getElementById("content").innerHTML = `
+      <div class="card">
 
-    ${row("Registration", reg)}
-    ${row("Make", data.make)}
-    ${row("Fuel", data.fuel)}
-    ${row("Colour", data.colour)}
+        <div style="text-align:center; margin-bottom:25px;">
 
-    <div class="warning">
-      ⚠ This vehicle may have hidden finance, theft or damage history
-    </div>
+  <img 
+    src="${getCarLogo(data.make)}" 
+    alt="logo"
+    style="height:40px; margin-bottom:10px;"
+    onerror="this.style.display='none'"
+  >
 
-    <!-- LOCKED -->
-    <div style="margin-top:25px; position:relative;">
-      <div class="locked">
-        ${row("Finance", "Unknown")}
-        ${row("Stolen", "Unknown")}
-        ${row("Write-off", "Unknown")}
-        ${row("Risk Score", "Calculating...")}
-      </div>
+  <h2 style="font-size:28px; margin:5px 0;">
+    ${data.make || "Vehicle"} ${data.model || ""} (${data.year || "-"})
+  </h2>
 
-      <div class="glass">
-        <div style="font-size:40px;">🔒</div>
-        <h3>Premium Data Locked</h3>
-        <p style="color:#6b7280;">Critical risk data hidden</p>
-        <!-- <button class="btn" onclick="openBasic()">Get Basic Report</button> -->
-      </div>
-    </div>
+<img 
+  src="${imgData.image}"
+  alt="car"
+  onerror="this.onerror=null; this.src='https://via.placeholder.com/800x400?text=Vehicle+Image';"
+  style="
+    width:100%;
+    height:220px;
+    object-fit:cover;
+    border-radius:14px;
+    margin-top:10px;
+  "
+/>
 
-    <button onclick="openBasic()" class="btn">
-      Get Basic Report (£4.99)
-    </button>
-
+  <div style="font-size:13px; color:#6b7280;">
+    Representative vehicle image
   </div>
-`;
+
+</div>
+
+<div style="
+  margin-top:10px;
+  font-size:14px;
+  color:#6b7280;
+">
+  Registration: <strong>${reg}</strong>
+</div>
+
+
+
+        <div class="features">
+          DVLA vehicle identity<br>
+          Make: ${data.make || "N/A"}<br>
+          Fuel: ${data.fuel || "N/A"}<br>
+          Colour: ${data.colour || "N/A"}<br>
+          MOT expiry: ${data.motDue || "N/A"}<br>
+          Mileage: ${data.mileage || "N/A"}<br>
+          Tax status: ${data.taxStatus || "N/A"}<br>
+          Owners: ${data.owners || "N/A"}<br>
+          Basic AI summary: Vehicle appears normal for age
+        </div>
+
+        ${row("Registration", reg)}
+        ${row("Make", data.make)}
+        ${row("Fuel", data.fuel)}
+        ${row("Colour", data.colour)}
+
+        <div class="warning">
+          ⚠ This vehicle may have hidden finance, theft or damage history
+        </div>
+
+        <div style="margin-top:25px; position:relative;">
+          <div class="locked">
+            ${row("Finance", "Unknown")}
+            ${row("Stolen", "Unknown")}
+            ${row("Write-off", "Unknown")}
+            ${row("Risk Score", "Calculating...")}
+          </div>
+
+          <div class="glass">
+            <div style="font-size:40px;">🔒</div>
+            <h3>Premium Data Locked</h3>
+            <p style="color:#6b7280;">Critical risk data hidden</p>
+          </div>
+        </div>
+
+        <button onclick="openBasic()" class="btn">
+          Get Basic Report (£4.99)
+        </button>
+
+      </div>
+    `;
+
+  } catch (err) {
+    console.error("❌ LOAD ERROR:", err);
+    document.getElementById("content").innerHTML = "❌ Failed to load vehicle data";
+  }
+
+  // ✅ ALWAYS hide loader (even if error)
+  const loader = document.getElementById("premiumLoader");
+  if (loader) {
+    loader.style.display = "none";
+  }
 }
+
+
+// ✅ OUTSIDE loadData (VERY IMPORTANT)
 
 function openModal() {
   document.getElementById("modal").style.display = "flex";
@@ -370,6 +628,12 @@ async function upgrade(pkg) {
   }
 }
 
+// 🚗 GET BRAND LOGO
+function getCarLogo(make) {
+  if (!make) return "";
+  return `https://logo.clearbit.com/${make.toLowerCase().replace(/\s/g, "")}.com`;
+}
+
 function row(label, value) {
   return `
     <div class="row">
@@ -379,15 +643,130 @@ function row(label, value) {
   `;
 }
 
-loadData();
+window.onload = loadData;
 
 function openBasic() {
   document.getElementById("basicUpsell").style.display = "flex";
+
+  setTimeout(() => {
+    selectPlan("premium");
+    animatePriceDrop();
+  }, 100);
+}
+
+function closeBasicUpsell() {
+  const modal = document.getElementById("basicUpsell");
+
+  if (modal) {
+    modal.style.display = "none";
+  }
+}
+
+// 🧠 PLAN STATE (ADD)
+let selectedPlan = "premium"; // default
+
+// 🔁 PLAN TOGGLE (ADD)
+function selectPlan(plan) {
+  selectedPlan = plan;
+
+  const premiumBtn = document.getElementById("premiumBtn");
+  const basicBtn = document.getElementById("basicBtn");
+
+  if (!premiumBtn || !basicBtn) return;
+
+  if (plan === "premium") {
+    premiumBtn.classList.add("btn-premium-active");
+    premiumBtn.classList.remove("btn-inactive");
+
+    basicBtn.classList.add("btn-inactive");
+    basicBtn.classList.remove("btn-premium-active");
+  } else {
+    basicBtn.classList.add("btn-premium-active");
+    basicBtn.classList.remove("btn-inactive");
+
+    premiumBtn.classList.add("btn-inactive");
+    premiumBtn.classList.remove("btn-premium-active");
+  }
+}
+
+// 🚀 FINAL CTA ACTION (ADD)
+function continueCheckout() {
+  if (selectedPlan === "premium") {
+    window.location.href = "/payment-premium"; // adjust
+  } else {
+    window.location.href = "/payment-basic"; // adjust
+  }
 }
 
 </script>
 
 <style>
+
+  .close-circle {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+
+  border: none;
+  cursor: pointer;
+
+  background: rgba(248, 211, 71, 0.9); /* your yellow */
+  color: #111827;
+  font-size: 18px;
+  font-weight: bold;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  backdrop-filter: blur(10px);
+
+  transition: all 0.25s ease;
+}
+
+/* Hover = Apple feel */
+.close-circle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(248, 211, 71, 0.6);
+}
+
+/* Click press */
+.close-circle:active {
+  transform: scale(0.9);
+}
+
+/* Smooth fade-in */
+.modal-box {
+  position: relative;
+  animation: modalPop 0.3s ease;
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+  /* 🔥 URGENCY PULSE */
+#savingText {
+  animation: pulseText 1.5s infinite;
+}
+
+@keyframes pulseText {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
   .btn {
     padding: 15px;
     border: none;
@@ -412,9 +791,9 @@ function openBasic() {
   }
 
   .btn:hover {
-    background: #15803d;
-    transform: translateY(-2px);
-  }
+  background: #15803d;
+  transform: translateY(-2px) scale(1.05);
+}
 
   .secondary-btn {
     padding: 15px;
@@ -455,6 +834,7 @@ function openBasic() {
 
 <div id="basicUpsell" class="modal">
   <div class="modal-box">
+    <button onclick="closeBasicUpsell()" class="close-circle">✕</button>
 
     <h2 style="text-align:center;">⚠ Before you continue...</h2>
 
@@ -470,17 +850,61 @@ function openBasic() {
       text-align:center;
       font-weight:bold;
     ">
-      🚨 This may NOT include finance, stolen or write-off data
+      🚨 This vehicle could have hidden finance, theft or accident history
     </div>
 
-    <div style="
+    <div onclick="selectPlan('premium')" class="premium-highlight" style="
       margin-top:15px;
       padding:15px;
-      background:#ecfdf5;
+      background:rgba(236,253,245,0.7);
+      cursor:pointer;
       border-radius:10px;
       text-align:center;
     ">
-      🔥 Upgrade today for <strong>£7.99</strong> (was £9.99)
+
+    <div style="
+  display:inline-block;
+  background: #dc2626;
+  color: white;
+  padding:4px 10px;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:bold;
+  margin-bottom:8px;
+">
+  LIMITED TIME OFFER
+
+</div>
+
+  🔥 Upgrade today for 
+  <div style="margin-top:5px; font-size:22px; font-weight:bold;">
+  <span id="oldPrice" style="text-decoration:line-through; color:#9ca3af; font-size:16px;">
+    £9.99
+  </span>
+
+  <span id="newPrice" style="color:#16a34a; margin-left:8px;">
+    £9.99
+  </span>
+  </div>
+
+<div id="savingText" style="
+  margin-top:5px;
+  font-size:14px;
+  color:#16a34a;
+  font-weight:600;
+  display:none;
+">
+  ✅ You save £2.00 today
+</div>
+
+<div style="
+  margin-top:6px;
+  font-size:13px;
+  color:#6b7280;
+">
+  🔥 Most buyers upgrade to avoid hidden risks
+</div>
+      
       <div class="timer">⏳ Offer ends in: <span id="countdown">05:00</span></div>
       <br>
       Finance check (avoid debt)<br>
@@ -490,14 +914,21 @@ function openBasic() {
       Accurate valuation
     </div>
 
-    <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+    <!-- <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;"> -->
+      <!-- <button onclick="closeBasicUpsell()" class="cancel-btn"> -->
+  <!-- ← Cancel & go back -->
+<!-- </button> -->
 
-      <button onclick="upgrade('premium')" class="btn btn-primary" style="flex:1;">
+      <button id="premiumBtn"
+        onclick="selectPlan('premium'); upgrade('premium')"
+        class="btn btn-primary btn-premium-active" style="flex:1;">
         🔥 Get Full Report (£7.99)
         <span class="badge">Most Popular</span>
       </button>
 
-      <button onclick="pay('standard')" class="btn secondary-btn" style="flex:1;">
+      <button id="basicBtn"
+        onclick="selectPlan('basic'); pay('standard')"
+        class="btn secondary-btn btn-inactive" style="flex:1;">
         Continue Basic (£4.99)
       </button>
 
@@ -511,6 +942,7 @@ function openBasic() {
   let time = 300;
   const countdownEl = document.getElementById("countdown");
 
+if (countdownEl) {
   setInterval(() => {
     let minutes = Math.floor(time / 60);
     let seconds = time % 60;
@@ -520,6 +952,59 @@ function openBasic() {
 
     if (time > 0) time--;
   }, 1000);
+}
+
+  document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeBasicUpsell();
+  }
+});
+
+// 💰 PRICE DROP ANIMATION (ADD)
+function animatePriceDrop() {
+  const priceEl = document.getElementById("newPrice");
+  const savingEl = document.getElementById("savingText");
+
+  if (!priceEl) return;
+
+  let price = 9.99;
+  const target = 7.99;
+
+  const interval = setInterval(() => {
+    price -= 0.25;
+
+    // ⚡ FLASH EFFECT DURING DROP
+    priceEl.style.color = price % 0.5 < 0.25 ? "#dc2626" : "#16a34a";
+
+    if (price <= target) {
+      price = target;
+      clearInterval(interval);
+
+      // 💥 FINAL IMPACT
+      priceEl.style.color = "#16a34a";
+      priceEl.style.transform = "scale(1.25)";
+      priceEl.style.fontWeight = "900";
+
+      // SHOW SAVINGS
+      if (savingEl) savingEl.style.display = "block";
+
+      setTimeout(() => {
+        priceEl.style.transform = "scale(1)";
+      }, 250);
+    }
+
+    priceEl.innerText = "£" + price.toFixed(2);
+  }, 45);
+}
+
+window.addEventListener("click", function (e) {
+  const modal = document.getElementById("basicUpsell");
+
+  if (e.target === modal) {
+    modal.style.display = "none";
+  }
+});
+  
 </script>
 
 </body>

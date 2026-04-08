@@ -2,10 +2,19 @@ import { Controller, Post, Body, Get, Res } from '@nestjs/common';
 import { VehicleService } from './vehicle.service';
 import { Response } from 'express';
 import PDFDocument from 'pdfkit';
+import { Query } from '@nestjs/common';
 
 @Controller('vehicle')
 export class VehicleController {
   constructor(private readonly vehicleService: VehicleService) {}
+
+  @Get('image')
+  getImage(
+    @Query('make') make: string,
+    @Query('model') model?: string
+) {
+  return this.vehicleService.getVehicleImage(make, model);
+}
 
   @Post('preview')
   async preview(@Body() body: { registration: string }) {
@@ -19,7 +28,7 @@ export class VehicleController {
 
   @Post('pdf')
   async generatePdf(
-    @Body() body: { registration: string },
+    @Body() body: { registration: string; paid?: boolean },
     @Res() res: Response
   ) {
     try {
@@ -27,7 +36,13 @@ export class VehicleController {
         return res.status(400).json({ error: 'Registration required' });
       }
 
-      let data: any = await this.vehicleService.getFull(body.registration);
+      let data: any;
+
+if (body.paid) {
+  data = await this.vehicleService.getFull(body.registration);
+} else {
+  data = await this.vehicleService.getPreview(body.registration);
+}
 
       if (!data || data.error) {
   console.error("❌ PDF DATA ERROR:", data);
@@ -72,6 +87,11 @@ doc.fontSize(12).text(`Generated: ${new Date().toLocaleDateString()}`);
 doc.moveDown();
 
 // ===== VEHICLE =====
+if (!body.paid) {
+  doc.fontSize(12).text('⚠ This is a limited report');
+  doc.text('Upgrade to unlock finance, stolen, and write-off data');
+  doc.moveDown();
+}
 doc.fontSize(14).text('Vehicle Details', { underline: true });
 doc.moveDown(0.5);
 
@@ -87,9 +107,15 @@ doc.moveDown();
 doc.fontSize(14).text('Key Checks', { underline: true });
 doc.moveDown(0.5);
 
-doc.text(`Finance: ${data.finance === 'outstanding' ? '⚠ Outstanding' : '✔ Clear'}`);
-doc.text(`Stolen: ${data.stolen === 'yes' ? '⚠ Yes' : '✔ No'}`);
-doc.text(`Write-off: ${data.writeOff === 'yes' ? '⚠ Yes' : '✔ No'}`);
+if (body.paid) {
+  doc.text(`Finance: ${data.finance === 'outstanding' ? '⚠ Outstanding' : '✔ Clear'}`);
+  doc.text(`Stolen: ${data.stolen === 'yes' ? '⚠ Yes' : '✔ No'}`);
+  doc.text(`Write-off: ${data.writeOff === 'yes' ? '⚠ Yes' : '✔ No'}`);
+} else {
+  doc.text(`Finance: 🔒 Locked`);
+  doc.text(`Stolen: 🔒 Locked`);
+  doc.text(`Write-off: 🔒 Locked`);
+}
 doc.text(`MOT: ${data.motValid ? '✔ Valid' : '⚠ Issue'}`);
 doc.text(`Tax: ${data.taxValid ? '✔ Valid' : '⚠ Issue'}`);
 doc.moveDown();

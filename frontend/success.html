@@ -175,6 +175,25 @@
   font-weight:bold;
 }
 
+/* 🔥 PREMIUM UPGRADE (ADD ONLY) */
+.card {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+}
+
+.hero {
+  border: 1px solid #e5e7eb;
+  background: linear-gradient(to right, #ffffff, #f9fafb);
+}
+
+.premium-banner {
+  background: #111827;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 15px;
+}
+
   </style>
 </head>
 <body>
@@ -214,6 +233,8 @@ function toggleMenu() {
 async function loadReport() {
   try {
 
+    console.log("🚀 LOAD REPORT STARTED"); // ✅ ADDED HERE
+
     // 🔐 LOCK PAGE
     if (!sessionId) {
       window.location.href = "/";
@@ -230,7 +251,11 @@ async function loadReport() {
     // ✅ GET REG FROM STRIPE
     console.log("SESSION ID:", sessionId);
 
+    console.log("🚀 STEP 1: calling /payment/success"); // ✅ ADDED
+
     const res1 = await fetch(`${API}/payment/success?session_id=${sessionId}`);
+
+    console.log("🚀 STEP 2: payment response status:", res1.status); // ✅ ADDED
 
     if (!res1.ok) {
       reportEl.innerHTML = "❌ Failed to verify payment";
@@ -238,6 +263,8 @@ async function loadReport() {
     }
 
     const sessionData = await res1.json();
+
+    console.log("🚀 STEP 3: session data:", sessionData); // ✅ ADDED
 
     console.log("SESSION DATA:", sessionData);
 
@@ -251,23 +278,26 @@ async function loadReport() {
     localStorage.setItem("paid_" + reg, "true");
     globalReg = reg;
 
-    // ✅ FETCH FULL REPORT
+    // =========================
+    // 🔽 ADD THIS NEXT PART BELOW YOUR EXISTING CODE
+    // =========================
+
+    console.log("🚀 STEP 4: calling /vehicle/full"); // ✅ ADD HERE
+
     const res2 = await fetch(`${API}/vehicle/full`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ registration: reg })
+      body: JSON.stringify({ registration: reg, paid: true })
     });
 
-    if (!res2.ok) {
-      reportEl.innerHTML = "❌ Failed to load report";
-      return;
-    }
-
+    console.log("🚀 STEP 5: full response status:", res2.status); // ✅ ADD
     const data = await res2.json();
+    // 🧠 PLAN DETECTION (ADD HERE)
+    const isPremium = data.finance !== "unknown";
+    console.log("🚀 STEP 6: full report data:", data); // ✅ ADD
 
     if (data.error) {
-      reportEl.innerHTML = `<p style="color:red;">${data.error}</p>`;
-      return;
+      console.warn("⚠ Using fallback data");
     }
 
     // ✅ RISK LOGIC
@@ -284,45 +314,167 @@ async function loadReport() {
 
     // ✅ RENDER UI
     reportEl.innerHTML = `
-      <div class="hero">
-        <div>
-          <div class="reg">${data.reg}</div>
-          <div class="sub">${data.make} ${data.model}</div>
-          <div class="sub">${data.fuel} • ${data.colour}</div>
-        </div>
+    <div class="premium-banner">
+      ✔ Verified vehicle report • Generated instantly • Trusted data sources
+    </div>
+    ${data.image ? `
+    <img src="${data.image}" 
+       style="width:120px; margin-top:10px; border-radius:10px;">
+    ` : ""}
 
-        <div>
-          <div class="risk-score">${data.riskScore}</div>
-          <div class="badge ${riskClass}">${riskText}</div>
-        </div>
+    <div class="hero">
+      <div style="margin-bottom:10px;">
+        <span class="badge ${isPremium ? 'high' : 'low'}" 
+            style="background:${isPremium ? '#111' : '#e5e7eb'}; color:${isPremium ? '#fff' : '#111'};">
+          ${isPremium ? 'PREMIUM REPORT' : 'BASIC REPORT'}
+        </span>
       </div>
+
+      <div>
+        <div class="reg">${data.reg}</div>
+
+      <div class="sub">
+      ${data.vehicle?.make || "N/A"} ${data.vehicle?.model || ""}
+    </div>
+
+    ${getLogo(data.make) ? `
+      <img src="${getLogo(data.make)}"
+           style="height:35px; margin-top:5px;">
+    ` : ""}
+
+    <div class="sub">
+   ${data.vehicle?.fuel || "N/A"} • ${data.vehicle?.colour || "N/A"} • ${data.vehicle?.year || "N/A"}
+    </div>
+
+    ${data.image ? `
+      <img src="${data.image}"
+           style="width:100%; margin-top:10px; border-radius:12px;">
+    ` : ""}
+    </div>
+
+    ${data.fallback ? `
+      <div style="background:#fef3c7; padding:12px; border-radius:10px; margin-top:15px;">
+      ⚠ Some data unavailable — please try again or upgrade for full checks
+    </div>
+    ` : ""}
+
+    <div style="text-align:right;">
+    <div class="risk-score">${data.riskScore}</div>
+
+    <div class="badge ${riskClass}">
+      ${riskText}
+    </div>
+
+    <div style="margin-top:10px; font-size:13px; color:#6b7280;">
+      Risk Assessment
+    </div>
+  </div>
+
+  </div>
+
+  <div class="section card" style="border-left:5px solid ${riskClass === 'high' ? 'red' : riskClass === 'medium' ? 'orange' : '#16a34a'};">
+  <h3>🚨 Risk Summary</h3>
+
+  <p>
+    ${
+      data.riskScore > 60
+        ? "High risk vehicle — caution advised before purchase"
+        : data.riskScore > 30
+        ? "Moderate risk — review details carefully"
+        : "Low risk — no major issues detected"
+    }
+  </p>
+  </div>
+
+  <div class="section card" style="background:#f9fafb;">
+  <h3>🧠 What this means</h3>
+
+  <div style="margin-top:10px;">
+    ${
+      data.riskScore > 60
+        ? "❗ This vehicle may have serious underlying issues. Strongly consider a full inspection before purchase."
+        : data.riskScore > 30
+        ? "⚠ Some risk indicators found. Check details carefully before making a decision."
+        : "✅ This vehicle shows no major red flags based on available data."
+    }
+  </div>
+</div>
 
       <div class="section card">
         <h3>Vehicle Details</h3>
         <div class="grid">
-          ${info("Make", data.make)}
-          ${info("Model", data.model)}
-          ${info("Fuel", data.fuel)}
-          ${info("Colour", data.colour)}
-          ${info("Year", data.year)}
-          ${info("Mileage", data.mileage ? data.mileage + " miles" : "N/A")}
+          ${info("Make", data.vehicle?.make)}
+          ${info("Model", data.vehicle?.model)}
+          ${info("Fuel", data.vehicle?.fuel)}
+          ${info("Colour", data.vehicle?.colour)}
+          ${info("Year", data.vehicle?.year)}
+          ${info("Mileage", data.mileage?.current ? data.mileage.current + " miles" : "N/A")}
         </div>
       </div>
 
       <div class="section card">
-        <h3>Key Checks</h3>
-        <div class="grid">
-          ${status("Finance", data.finance !== "outstanding")}
-          ${status("Stolen", data.stolen !== "yes")}
-          ${status("Write-off", data.writeOff !== "yes")}
-          ${status("MOT", data.motValid)}
-          ${status("Tax", data.taxValid)}
-        </div>
-      </div>
+  <h3>Critical Checks</h3>
+
+  // 🔒 BASIC MODE CONTROL (ADD ABOVE CHECKS)
+  const showPremiumData = isPremium;
+  <div class="grid">
+    ${data.finance === "unknown"
+  ? locked("Finance")
+  : status("Finance", data.finance !== "outstanding")}
+
+  ${data.finance === "unknown"
+  ? locked("Stolen")
+  : status("Stolen", data.stolen !== "yes")}
+
+  ${data.finance === "unknown"
+  ? locked("Write-off")
+  : status("Write-off", data.writeOff !== "yes")}
+
+    ${status("MOT", data.motValid)}
+    ${status("Tax", data.taxValid)}
+  </div>
+</div>
+
+${!isPremium ? `
+<div class="section card" style="text-align:center; border:2px dashed #e5e7eb;">
+  
+  <h3>🔒 Unlock Full Vehicle History</h3>
+
+  <p style="color:#6b7280; margin-top:10px;">
+    Finance records, theft checks, and write-off history are hidden
+  </p>
+
+  <button class="btn" onclick="window.location.href='pricing.html'" 
+          style="margin-top:15px; width:100%;">
+    Upgrade to Premium
+  </button>
+
+</div>
+` : ""}
+
+<div class="section card">
+  <h3>💰 Market Valuation</h3>
+
+  <div class="value-box">£${data.estimatedValue || "N/A"}</div>
+
+  <div class="insight">
+    This estimate is based on mileage, age, and market trends
+  </div>
+</div>
+
+<div class="section card">
+  <h3>🧠 Smart Insights</h3>
+
+  ${
+    data.insights?.length
+      ? data.insights.map(i => `<div class="insight">• ${i}</div>`).join("")
+      : "<p>No major issues detected</p>"
+  }
+</div>
 
       <div class="section card">
         <h3>Risk Summary</h3>
-        <p><strong>Score:</strong> ${data.riskScore}/100</p>
+        <p><strong>Score:</strong> ${data.riskScore ?? 0}/100</p>
         <p><strong>Assessment:</strong> ${riskText}</p>
       </div>
 
@@ -340,11 +492,15 @@ async function loadReport() {
         }
       </div>
 
-      <button class="btn" onclick="downloadPDF()">📄 Download PDF Report</button>
-    `;
+  <button class="btn" onclick="downloadPDF()" style="margin-top:20px; width:100%; font-weight:bold; font-size:17px; box-shadow:0 10px 20px rgba(0,0,0,0.1);">
+  📄 Download Official Vehicle Report (PDF)
+</button>
 
-  } catch (err) {
-    console.error("❌ LOAD ERROR:", err);
+`;
+
+  } 
+  catch (err) {
+  console.error("❌ ERROR IN LOAD REPORT:", err); // ✅ ADD THIS
 
     const reportEl = document.getElementById("report");
     if (reportEl) {
@@ -401,6 +557,31 @@ function status(label, ok) {
       </div>
     </div>
   `;
+}
+
+// 🔒 PREMIUM LOCKED UI (ADD ONLY)
+function locked(label) {
+  return `
+    <div class="small-card" style="background:#f9fafb; border:1px dashed #d1d5db;">
+      <div style="color:#6b7280;">${label}</div>
+      <div style="font-weight:bold; color:#9ca3af;">
+        🔒 Premium only
+      </div>
+    </div>
+  `;
+}
+
+// ✅ MOVED OUTSIDE (FIXED)
+function getLogo(make) {
+  const logos = {
+    "FORD": "https://logo.clearbit.com/ford.com",
+    "VAUXHALL": "https://logo.clearbit.com/vauxhall.co.uk",
+    "BMW": "https://logo.clearbit.com/bmw.com",
+    "AUDI": "https://logo.clearbit.com/audi.com",
+    "MERCEDES": "https://logo.clearbit.com/mercedes-benz.com",
+  };
+
+  return logos[make?.toUpperCase()] || "";
 }
 
 /* ✅ IMPORTANT FIX: WAIT FOR DOM */

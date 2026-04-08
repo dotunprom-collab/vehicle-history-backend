@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>CheapRegCheck UK</title>
+
   <style>
     body {
       margin:0;
@@ -132,55 +133,56 @@
       padding:60px 40px;
     }
   </style>
+
+  <script>
+    function checkVehicle() {
+      const regInput = document.getElementById("reg");
+
+      if (!regInput) {
+        alert("Input not found");
+        return;
+      }
+
+      const reg = regInput.value.trim().toUpperCase();
+
+      if (!reg) {
+        alert("Enter registration");
+        return;
+      }
+
+      // 👉 FIXED (quotes added)
+      window.location.href = `/result.html?reg=${reg}`;
+    }
+  </script>
+
 </head>
-
-<script>
-function checkVehicle() {
-  const regInput = document.getElementById("reg");
-
-  if (!regInput) {
-    alert("Input not found");
-    return;
-  }
-
-  const reg = regInput.value.trim().toUpperCase();
-
-  if (!reg) {
-    alert("Enter registration");
-    return;
-  }
-
-  // 👉 redirect to preview page
-  window.location.href = `/result.html?reg=${reg}`;
-}
-</script>
-
 
 <body>
 
-<!-- NAVBAR -->
+<!-- NAVBAR STYLE -->
 <style>
   .nav-links a {
     font-weight: 700;
-    color: #010101; /* your yellow/gold color */
+    color: #010101;
     text-decoration: none;
     margin-left: 20px;
   }
 
   .nav-links a:hover {
-    color: #e0bb2f; /* slightly darker on hover */
+    color: #e0bb2f;
   }
 </style>
 
+<!-- NAVBAR -->
 <div class="nav">
   <a href="index.html">
     <img src="./mylogo/logo.png" style="height:90px;">
   </a>
+
   <div class="nav-links">
     <a href="index.html">Home</a>
     <a href="pricing.html">Pricing</a>
     <a href="contact.html">Contact</a>
-    <!-- <a href="check.html" class="cta-btn">🔍 Check Vehicle</a> -->
   </div>
 </div>
 
@@ -191,6 +193,7 @@ function checkVehicle() {
   max-width: 900px;
   margin: auto;
 ">
+
   <!-- TRUST BADGE -->
   <div style="
     background:#ecfdf5;
@@ -203,6 +206,7 @@ function checkVehicle() {
   ">
     ✔ Trusted by 50,000+ UK buyers
   </div>
+
   <!-- HEADLINE -->
   <h1 style="
     font-size:48px;
@@ -213,6 +217,7 @@ function checkVehicle() {
     Know your vehicle’s<br>
     <span style="color:#16a34a;">complete history</span>
   </h1>
+
   <!-- SUBTEXT -->
   <p style="
     color:#6b7280;
@@ -223,6 +228,7 @@ function checkVehicle() {
   ">
     Instant MOT, tax, finance, and stolen checks from official UK databases.
   </p>
+
   <!-- INPUT -->
   <div style="
     margin-top:28px;
@@ -231,40 +237,39 @@ function checkVehicle() {
     justify-content:center;
     flex-wrap:wrap;
   ">
-  <div style="
-  background:#16a34a;
-  color:white;
-  padding:10px 12px;
-  border-radius:8px;
-  font-weight:bold;
-">
 
+    <div style="
+      background:#16a34a;
+      color:white;
+      padding:10px 12px;
+      border-radius:8px;
+      font-weight:bold;
+    ">
+      🇬🇧 UK
+    </div>
 
+    <input id="reg" placeholder="ENTER REG" style="
+      padding:12px;
+      font-size:18px;
+      background:#F8D347;
+      border:2px solid #09090900;
+      border-radius:8px;
+      text-transform:uppercase;
+      width:180px;
+    ">
 
-  🇬🇧 UK
-</div>
+    <button onclick="checkVehicle()" style="
+      background:#16a34a;
+      color:white;
+      border:none;
+      padding:12px 18px;
+      border-radius:8px;
+      font-weight:bold;
+      cursor:pointer;
+    ">
+      Check Vehicle
+    </button>
 
-<input id="reg" placeholder="ENTER REG" style="
-  padding:12px;
-  font-size:18px;
-  background:#F8D347;
-  border:2px solid #09090900;
-  border-radius:8px;
-  text-transform:uppercase;
-  width:180px;
-">
-
-<button onclick="checkVehicle()" style="
-  background:#16a34a;
-  color:white;
-  border:none;
-  padding:12px 18px;
-  border-radius:8px;
-  font-weight:bold;
-  cursor:pointer;
-">
-  Check Vehicle
-  </button>
   </div>
 
   <!-- SOCIAL PROOF -->
@@ -275,79 +280,72 @@ function checkVehicle() {
   ">
     ⭐ 4.8/5 from 2,300 reviews • 🔥 12 checks in last hour
   </div>
+
 </div>
 
 <!-- HOW IT WORKS -->
 <div class="section">
+
   <h2>How it works</h2>
-  <div style="display:flex; gap:20px; justify-content:center; flex-wrap:wrap; margin-top:40px;">
-<div class="card">
-  <h3>Enter Registration</h3>
-  <p style="color:#6b7280;">Type your UK number plate</p>
-</div>
 
-<div class="card">
-  <h3>Choose Package</h3>
-  <p style="color:#6b7280;">Select your check level</p>
-</div>
+  <div style="
+    display:flex;
+    gap:20px;
+    justify-content:center;
+    flex-wrap:wrap;
+    margin-top:40px;
+  ">
 
-<div class="card">
-  <h3>Get Report</h3>
-  <p style="color:#6b7280;">Instant full vehicle history</p>
-</div>
+    <div class="card">
+      <h3>Enter Registration</h3>
+      <p style="color:#6b7280;">Type your UK number plate</p>
+    </div>
+
+    <div class="card">
+      <h3>Choose Package</h3>
+      <p style="color:#6b7280;">Select your check level</p>
+    </div>
+
+    <div class="card">
+      <h3>Get Report</h3>
+      <p style="color:#6b7280;">Instant full vehicle history</p>
+    </div>
+
   </div>
 
-  <!-- FOOTER -->
-  <footer style="background:#f9fafb; padding:60px 20px 30px; margin-top:60px; border-top:1px solid #e5e7eb;">
-  
-  <div style="max-width:1100px; margin:auto; display:flex; flex-wrap:wrap; gap:40px; justify-content:space-between;">
+</div>
 
-    <!-- BRAND -->
+<!-- FOOTER -->
+<footer style="
+  background:#f9fafb;
+  padding:60px 20px 30px;
+  margin-top:60px;
+  border-top:1px solid #e5e7eb;
+">
+
+  <div style="
+    max-width:1100px;
+    margin:auto;
+    display:flex;
+    flex-wrap:wrap;
+    gap:40px;
+    justify-content:space-between;
+  ">
+
     <div style="flex:1; min-width:220px;">
-      <h2 style="color:#16a34a; margin-bottom:10px;">CheapRegCheck</h2>
+      <h2 style="color:#16a34a;">CheapRegCheck</h2>
       <p style="color:#6b7280; font-size:14px;">
-        UK vehicle history checks powered by trusted data sources. 
-        Check before you buy and avoid costly mistakes.
-      </p>
-    </div>
-
-    <!-- LINKS -->
-    <div style="flex:1; min-width:150px;">
-      <h4>Company</h4>
-      <ul style="list-style:none; padding:0; line-height:28px;">
-        <li><a href="/pricing.html">Pricing</a></li>
-        <li><a href="/faq.html">FAQ</a></li>
-        <li><a href="/privacy.html">Privacy Policy</a></li>
-      </ul>
-    </div>
-
-    <!-- PRODUCT -->
-    <div style="flex:1; min-width:150px;">
-      <h4>Product</h4>
-      <ul style="list-style:none; padding:0; line-height:28px;">
-        <li><a href="/">Free Car Check</a></li>
-        <li><a href="/check.html">Premium Report</a></li>
-      </ul>
-    </div>
-
-    <!-- TRUST -->
-    <div style="flex:1; min-width:220px;">
-      <h4>Trusted & Secure</h4>
-      <p style="color:#6b7280; font-size:14px;">
-         DVLA Data Verified<br>
-         Secure Payments via Stripe<br>
-         Instant Digital Reports
+        UK vehicle history checks powered by trusted data sources.
       </p>
     </div>
 
   </div>
 
-  <!-- DIVIDER -->
-  <div style="border-top:1px solid #e5e7eb; margin:40px 0;"></div>
-
-  <!-- BOTTOM -->
   <div style="text-align:center; color:#6b7280; font-size:13px;">
-    © 2026 CheapRegCheck UK. All rights reserved.
+    © 2026 CheapRegCheck UK
   </div>
 
 </footer>
+
+</body>
+</html>
