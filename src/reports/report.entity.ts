@@ -9,18 +9,33 @@ export class Report {
   @Column()
   reg!: string;
 
-  @Column()
+  @Column({ nullable: true })
   make!: string;
 
-  @Column()
+  @Column({ nullable: true })
   model!: string;
 
-  @Column()
+  @Column({ nullable: true })
   riskScore!: number;
 
   @Column({ type: 'simple-json', nullable: true })
   data!: any;
 
+  // 🔥 NEW: PAYMENT STATUS
+  @Column({ default: 'pending' })
+  status!: string; // 'pending' | 'paid'
+
+  // 🔥 NEW: PACKAGE TYPE
+  @Column({ nullable: true })
+  pkg!: string; // basic | standard | premium
+
+  // 🔥 NEW: BUNDLE SUPPORT
+  @Column({ nullable: true })
+  bundle!: string; // "3" | "5"
+
   @CreateDateColumn()
   createdAt!: Date;
+
+  @Column({ nullable: true })
+  userId!: string;
 }

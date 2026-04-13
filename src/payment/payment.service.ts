@@ -1,80 +1,187 @@
 import { Injectable } from '@nestjs/common';
 import Stripe from 'stripe';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Bundle } from '../bundle/bundle.entity';
 
 @Injectable()
 export class PaymentService {
   private stripe: Stripe | null;
 
-  constructor() {
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
+  constructor(
+  @InjectRepository(Bundle)
+  private bundleRepo: Repository<Bundle>,
+) {
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  console.log("🔥 STRIPE KEY FULL:", stripeKey);
+  console.log("🔥 STRIPE KEY LENGTH:", stripeKey?.length);
 
-    if (!stripeKey) {
-      console.warn("⚠️ STRIPE DISABLED");
-      this.stripe = null;
-      return;
-    }
+if (!stripeKey) {
+  console.warn("⚠️ STRIPE DISABLED");
+  this.stripe = null;
+  return;
+}
 
-    this.stripe = new Stripe(stripeKey, {
-      apiVersion: '2026-02-25.clover',
-    });
+this.stripe = new Stripe(stripeKey);
+
+// ✅ NOW it's safe
+console.log("🔥 STRIPE INSTANCE:", !!this.stripe);
+
+  if (!stripeKey) {
+    console.warn("⚠️ STRIPE DISABLED");
+    this.stripe = null;
+    return;
   }
 
-  // ✅ CREATE CHECKOUT SESSION (WITH PACKAGE)
-  async createCheckoutSession(reg: string, pkg: string) {
-    try {
-      if (!this.stripe) {
-        return { error: 'Payments not configured' };
-      }
+  this.stripe = new Stripe(stripeKey);
+}
 
-      // 💰 PRICE LOGIC
-      let price = 499;
+  // =========================
+  // 💳 CREATE CHECKOUT SESSION
+  // =========================
+  
+  async createCheckoutSession(
+  reg: string,
+  pkg?: string,
+  bundle?: number
+) {
+  console.log("🔥 CHECKOUT REQUEST:", { reg, pkg, bundle });
 
-      if (pkg === 'basic') price = 199;
-      if (pkg === 'standard') price = 499;
-      if (pkg === 'premium') price = 999;
+  try {
+    if (!this.stripe) {
+      return { error: 'Payments not configured' };
+    }
 
-      const session = await this.stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        mode: 'payment',
-        line_items: [
-          {
-            price_data: {
-              currency: 'gbp',
-              product_data: {
-                name: `Vehicle Report (${reg}) - ${pkg}`,
-              },
-              unit_amount: price,
-            },
-            quantity: 1,
+    let price: number | null = null;
+    let name = '';
+
+    if (pkg === 'basic') {
+      price = 199;
+      name = `Basic Report (${reg})`;
+    }
+
+    if (pkg === 'standard') {
+      price = 499;
+      name = `Standard Report (${reg})`;
+    }
+
+    if (pkg === 'premium') {
+      price = 999;
+      name = `Premium Report (${reg})`;
+    }
+
+    if (bundle === 3) {
+      price = 1499;
+      name = `Bundle 3 Checks`;
+    }
+
+    if (bundle === 5) {
+      price = 1999;
+      name = `Bundle 5 Checks`;
+    }
+
+    if (!price) {
+      throw new Error('Invalid selection');
+    }
+
+    // 🔥 MOVE IT HERE (RIGHT BEFORE STRIPE CALL)
+    const successUrl = `https://vehicle-history-backend-production.up.railway.app/result?session_id={CHECKOUT_SESSION_ID}&reg=${reg}`;
+    const cancelUrl = `https://vehicle-history-backend-production.up.railway.app/result?reg=${reg}`;
+
+    console.log("🔥🔥🔥 SUCCESS URL BEING SENT TO STRIPE:");
+    console.log(successUrl);
+
+    // ✅ USE VARIABLES HERE
+    const session = await this.stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+
+      customer_creation: 'always',
+      billing_address_collection: 'auto',
+
+      line_items: [
+        {
+          price_data: {
+            currency: 'gbp',
+            product_data: { name },
+            unit_amount: price,
           },
-        ],
-        success_url: `https://your-frontend-domain.com/success.html?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `https://your-frontend-domain.com/check.html`,
-        metadata: { reg, pkg },
-      });
+          quantity: 1,
+        },
+      ],
 
-      return { url: session.url || null };
+      success_url: successUrl,   // ✅ FIXED
+      cancel_url: cancelUrl,     // ✅ FIXED
 
-    } catch (error: any) {
-      console.error("🔥 STRIPE ERROR:", error.message);
-      return { error: 'Payment failed' };
-    }
+      metadata: {
+        reg: reg || '',
+        pkg: pkg || '',
+        bundle: bundle ? bundle.toString() : '',
+      },
+    });
+
+    return { url: session.url || null };
+
+  } catch (error: any) {
+    console.error("🔥 STRIPE ERROR:", error.message);
+    return { error: 'Payment failed' };
   }
+}
 
+  // =========================
   // ✅ GET SESSION
-    async getSession(sessionId: string) {
+  // =========================
+  async getSession(sessionId: string) {
     try {
       if (!this.stripe) {
         return { error: 'Payments not configured' };
       }
-      console.log("🚀 USING DOMAIN: https://vehicle-history-backend-production.up.railway.app");
-      console.log("🔥🔥🔥 STRIPE SESSION CREATED 🔥🔥🔥");
+
       const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+
+      // 🔥 CREATE BUNDLE IF PAID
+      if (session.payment_status === 'paid' && session.metadata?.bundle) {
+        await this.createBundleFromPayment(session);
+      }
+
       return session;
 
     } catch (error: any) {
       console.error("🔥 STRIPE SESSION ERROR:", error.message);
       return { error: 'Failed to retrieve session' };
     }
+  }
+
+  // =========================
+  // 🎟️ CREATE BUNDLE (SAFE)
+  // =========================
+  async createBundleFromPayment(session: any) {
+    const bundle = session.metadata?.bundle;
+    if (!bundle) return;
+
+    const total = Number(bundle);
+    const userId = session.customer_details?.email || 'guest';
+
+    // 🚫 PREVENT DUPLICATES (ONLY NEED SESSION ID)
+    const existing = await this.bundleRepo.findOne({
+      where: {
+        stripeSessionId: session.id,
+      },
+    });
+
+    if (existing) {
+      console.log("⚠️ Bundle already exists");
+      return;
+    }
+
+    await this.bundleRepo.save({
+      userId,
+      total,
+      remaining: total,
+      type: `bundle_${bundle}`,
+      stripeSessionId: session.id,
+    });
+
+    console.log("✅ Bundle created");
   }
 }

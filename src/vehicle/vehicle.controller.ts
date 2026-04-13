@@ -3,10 +3,16 @@ import { VehicleService } from './vehicle.service';
 import { Response } from 'express';
 import PDFDocument from 'pdfkit';
 import { Query } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
+import { JwtGuard } from '../auth/jwt.guard';
+import { Req } from '@nestjs/common';
+import { AuthenticatedRequest } from '../types/express';
+
 
 @Controller('vehicle')
 export class VehicleController {
   constructor(private readonly vehicleService: VehicleService) {}
+  
 
   @Get('image')
   getImage(
@@ -21,10 +27,21 @@ export class VehicleController {
     return this.vehicleService.getPreview(body.registration);
   }
 
-  @Post('full')
-  async full(@Body() body: { registration: string }) {
-    return this.vehicleService.getFull(body.registration);
-  }
+@UseGuards(JwtGuard)
+@Post('full')
+getFull(
+  @Body() body: { reg: string; sessionId?: string },
+  @Req() req: AuthenticatedRequest
+) {
+  const user = req.user;
+  const userId = user?.email || 'guest';
+
+  return this.vehicleService.getFullReport(
+    body.reg,
+    body.sessionId,
+    userId
+  );
+}
 
   @Post('pdf')
   async generatePdf(
