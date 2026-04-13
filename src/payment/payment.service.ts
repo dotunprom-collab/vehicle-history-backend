@@ -41,10 +41,11 @@ console.log("🔥 STRIPE INSTANCE:", !!this.stripe);
   // =========================
   
   async createCheckoutSession(
-  reg: string,
-  pkg?: string,
-  bundle?: number
+    reg: string,
+    pkg?: string,
+    bundle?: number
 ) {
+  console.log("🚀 FUNCTION HIT: createCheckoutSession");
   console.log("🔥 CHECKOUT REQUEST:", { reg, pkg, bundle });
 
   try {
@@ -85,7 +86,7 @@ console.log("🔥 STRIPE INSTANCE:", !!this.stripe);
     }
 
     // 🔥 MOVE IT HERE (RIGHT BEFORE STRIPE CALL)
-    const successUrl = `https://vehicle-history-backend-production.up.railway.app/result?session_id={CHECKOUT_SESSION_ID}&reg=${reg}`;
+    const successUrl = `http://localhost:5500/result.html?session_id={CHECKOUT_SESSION_ID}&reg=${reg}`;
     const cancelUrl = `https://vehicle-history-backend-production.up.railway.app/result?reg=${reg}`;
 
     console.log("🔥🔥🔥 SUCCESS URL BEING SENT TO STRIPE:");

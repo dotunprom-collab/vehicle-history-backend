@@ -6,13 +6,15 @@ export class JwtGuard implements CanActivate {
   constructor(private authService: AuthService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
+  const request = context.switchToHttp().getRequest();
 
-    const authHeader = request.headers.authorization;
+  const authHeader = request.headers.authorization;
 
-    if (!authHeader) return false;
-
-    const token = authHeader.split(' ')[1];
+  // 🔥 ADD THIS (safer check)
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return false;
+  }
+  const token = authHeader.split(' ')[1];
 
     const decoded = this.authService.verifyToken(token);
 

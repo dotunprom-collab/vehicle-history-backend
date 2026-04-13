@@ -884,7 +884,8 @@ async function handleStripeSuccess() {
       localStorage.setItem("sessionId", stripeSessionId);
 
       // 🔥 CLEAN URL (remove session_id)
-      window.history.replaceState({}, document.title, `/result?reg=${data.reg}`);
+      // window.history.replaceState({}, document.title, `/result?reg=${data.reg}`);
+      window.history.replaceState({}, document.title, `/result.html?reg=${data.reg}`);
     }
 
   } catch (err) {
@@ -916,9 +917,8 @@ if (sessionIdFromUrl) {
 async function loadData() {
   console.log("🚀 loadData running...");
 
-  const userId = localStorage.getItem("userId");
   const sessionId = localStorage.getItem("sessionId");
-  const token = localStorage.getItem("token"); // 🔥 ADD THIS
+  const token = localStorage.getItem("token");
 
   if (!reg) {
     document.getElementById("content").innerHTML = "❌ No registration";
@@ -926,34 +926,19 @@ async function loadData() {
   }
 
   try {
+    const endpoint = token ? "/vehicle/full" : "/vehicle/preview";
 
-    if (sessionIdFromUrl) {
-  try {
-    const res = await fetch(`${API}/payment/success?session_id=${sessionIdFromUrl}`);
-    const data = await res.json();
-
-    if (data.token) {
-      localStorage.setItem("token", data.token); // 🔥 STORE JWT
-      localStorage.setItem("sessionId", sessionIdFromUrl);
-      console.log("✅ Payment verified, token saved");
-    }
-  } catch (err) {
-    console.error("Payment verification failed:", err);
-  }
-}
-    // ===== FETCH VEHICLE =====
-   const res = await fetch(`${API}/vehicle/full`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "Authorization": token ? `Bearer ${token}` : ""
-  },
-  body: JSON.stringify({ reg, sessionId })
-  });
+    const res = await fetch(`${API}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` })
+      },
+      body: JSON.stringify({ reg, sessionId })
+    });
 
     const raw = await res.json();
-    console.log("API DATA:", raw);
-    
+    console.log("API DATA:", raw);    
 
     const data = raw.data || raw.vehicle || raw;
 
@@ -1207,7 +1192,8 @@ function row(label, value) {
 
 window.onload = async () => {
   await handleStripeSuccess(); // 🔥 FIRST
-  loadData();                 // 🔥 THEN LOAD DATA
+  const token = localStorage.getItem("token");
+  await loadData();                // 🔥 THEN LOAD DATA
 };
 
 function openBasic() {
@@ -1567,7 +1553,6 @@ function animatePriceDrop() {
     priceEl.innerText = "£" + price.toFixed(2);
   }, 45);
 }
-
 window.addEventListener("click", function (e) {
   const modal = document.getElementById("basicUpsell");
 
@@ -1575,8 +1560,6 @@ window.addEventListener("click", function (e) {
     modal.style.display = "none";
   }
 });
-  
 </script>
 </body>
 </html>
-
