@@ -5,9 +5,9 @@ import { JwtService } from '@nestjs/jwt';
 export class AuthService {
   constructor(private jwtService: JwtService) {}
 
-  generateToken(userId: string) {
-    return this.jwtService.sign({ userId });
-  }
+  generateToken(payload: any) {
+  return this.jwtService.sign(payload);
+}
 
   verifyToken(token: string) {
     try {

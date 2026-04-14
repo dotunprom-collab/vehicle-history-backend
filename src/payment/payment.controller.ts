@@ -47,7 +47,11 @@ async checkout(
     }
 
     // 🔥 GENERATE JWT
-    const token = this.authService.generateToken(email);
+    const token = this.authService.generateToken({
+      email,
+      reg,
+      sessionId,
+    });
 
     return {
       reg,
