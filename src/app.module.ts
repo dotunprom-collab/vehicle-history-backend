@@ -12,10 +12,13 @@ import { join } from 'path';
 
 @Module({
   imports: [
-    // ✅ SERVE FRONTEND
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'frontend'),
-    }),
+ ServeStaticModule.forRoot({
+  rootPath: join(__dirname, '..', 'frontend'),
+  serveStaticOptions: {
+    index: ['index.html'],
+  },
+  exclude: ['/vehicle*', '/payment*'],
+}),
 
     // ✅ DATABASE (KEEP THIS REAL)
     TypeOrmModule.forRoot({
