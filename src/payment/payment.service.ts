@@ -86,8 +86,8 @@ console.log("🔥 STRIPE INSTANCE:", !!this.stripe);
     }
 
     // 🔥 MOVE IT HERE (RIGHT BEFORE STRIPE CALL)
-    const successUrl = `http://127.0.0.1:5501/result.html?session_id={CHECKOUT_SESSION_ID}&reg=${reg}`;
-    const cancelUrl = `http://127.0.0.1:5501/result.html?reg=${reg}`;
+    const successUrl = `https://your-frontend-domain.com/result.html?session_id={CHECKOUT_SESSION_ID}&reg=${reg}`;
+    const cancelUrl = `https://your-frontend-domain.com/result.html?reg=${reg}`;
 
     console.log("🔥🔥🔥 SUCCESS URL BEING SENT TO STRIPE:");
     console.log(successUrl);

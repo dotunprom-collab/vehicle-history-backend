@@ -51,7 +51,6 @@
   opacity: 0.85;
 }
 
-
  .pricing-container {
   display: flex;
   justify-content: center;
@@ -657,16 +656,13 @@
 
 /* EACH ITEM */
 
-
 /* HOVER (Apple subtle lift) */
-
 
 /* LABEL */
 .spec-label {
   font-size: 13px;
   color: #6b7280; /* slightly darker */
 }
-
 
 /* MOBILE */
 @media (max-width: 768px) {
@@ -763,9 +759,10 @@
   transform: translateY(-1px);
 }
 
-
   </style>
 </head>
+
+<!-- =====BODY===== -->
 
 <body>
 
@@ -785,9 +782,8 @@
 
 </div>
 
-
 <div class="container">
-  <div id="content">
+    <div id="content"></div>
 
   <div id="premiumLoader" class="loader-overlay">
 
@@ -865,49 +861,29 @@
 </div>
 
 <script>
+console.log("🔥 SCRIPT STARTED");
 const API = "https://vehicle-history-backend-production.up.railway.app";
 
 const params = new URLSearchParams(window.location.search);
 const stripeSessionId = params.get("session_id");
 
-async function handleStripeSuccess() {
-  if (!stripeSessionId) return;
-
-  try {
-    const res = await fetch(`${API}/payment/success?session_id=${stripeSessionId}`);
-    const data = await res.json();
-
-    console.log("💰 Stripe success:", data);
-
-    if (data.token) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("sessionId", stripeSessionId);
-
-      // 🔥 CLEAN URL (remove session_id)
-      // window.history.replaceState({}, document.title, `/result?reg=${data.reg}`);
-      window.history.replaceState({}, document.title, `/result.html?reg=${data.reg}`);
-    }
-
-  } catch (err) {
-    console.error("Stripe verify failed:", err);
-  }
-}
-
-function getCarImage(make, model) {
-  return `${API}/vehicle/image?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model || "")}`;
-}
-
 const urlParams = new URLSearchParams(window.location.search);
 
-let reg = urlParams.get("reg");
-const sessionIdFromUrl = urlParams.get("session_id"); // 🔥 ADD THIS
+const sessionIdFromUrl = urlParams.get("session_id");
 
-// restore reg
-if (!reg) {
-  reg = sessionStorage.getItem("reg");
-} else {
+// ✅ FIXED REG LOGIC
+let reg = urlParams.get("reg");
+
+if (reg) {
   sessionStorage.setItem("reg", reg);
+} else {
+  reg = sessionStorage.getItem("reg");
 }
+
+// 🔍 DEBUG (VERY IMPORTANT)
+console.log("URL:", window.location.href);
+console.log("REG:", reg);
+console.log("SESSION ID:", sessionIdFromUrl);
 
 // 🔥 STORE STRIPE SESSION (CRITICAL)
 if (sessionIdFromUrl) {
@@ -915,9 +891,9 @@ if (sessionIdFromUrl) {
 }
 
 async function loadData() {
-  console.log("🚀 loadData running...");
+  console.log("🔥 loadData CALLED");
+  console.log("👉 USING REG:", reg);
 
-  const sessionId = localStorage.getItem("sessionId");
   const token = localStorage.getItem("token");
 
   if (!reg) {
@@ -926,66 +902,44 @@ async function loadData() {
   }
 
   try {
-    const endpoint = token ? "/vehicle/full" : "/vehicle/preview";
+    // const endpoint = token ? "/vehicle/full" : "/vehicle/preview";
+    const endpoint = "/vehicle/preview";
 
+    console.log("🔥 CALLING API:", `${API}${endpoint}`);
+
+    // ✅ Safe headers
+    const headers = {
+      "Content-Type": "application/json"
+    };
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    console.log("🔥 ABOUT TO FETCH");
     const res = await fetch(`${API}${endpoint}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` })
-      },
-      body: JSON.stringify({ reg, sessionId })
+      headers,
+      body: JSON.stringify({ reg })
     });
 
+    // ✅ Handle HTTP errors
+    if (!res.ok) {
+      console.error("❌ HTTP ERROR:", res.status);
+      throw new Error("Request failed");
+    }
+
     const raw = await res.json();
-    console.log("API DATA:", raw);    
+    console.log("✅ API DATA:", raw);
 
     const data = raw.data || raw.vehicle || raw;
 
-    if (!data || typeof data !== "object" || !data.make) {
-      throw new Error("Invalid API response");
-    }
-
-    // ===== FETCH IMAGE =====
-    let imageUrl = "mylogo/cover-car.png";
-
-try {
-  const imgRes = await fetch(getCarImage(data.make, data.model));
-
-  if (imgRes.ok) {
-    const imgData = await imgRes.json();
-
-    if (imgData?.image) {
-      imageUrl = imgData.image;
-    }
-  }
-} catch (e) {
-  console.log("Image API failed:", e);
-}
-
-try {
-  const imgRes = await fetch(getCarImage(data.make, data.model));
-
-  console.log("IMAGE API STATUS:", imgRes.status);
-
-  if (imgRes.ok) {
-    const imgData = await imgRes.json();
-    console.log("IMAGE DATA:", imgData);
-
-    if (imgData && imgData.image) {
-      imageUrl = imgData.image;
-    }
-  }
-} catch (e) {
-  console.log("Image API failed:", e);
-}
-
-console.log("FINAL IMAGE URL:", imageUrl);
+     // ===== FETCH IMAGE =====
+   let imageUrl = "mylogo/cover-car.png"; // 🔥 static placeholder for now
 
    // ===== RENDER =====
 document.getElementById("content").innerHTML = `
   <div class="card">
-
     <div class="hero">
 
   <!-- LEFT: CAR INFO -->
@@ -1021,10 +975,7 @@ document.getElementById("content").innerHTML = `
     this.src='mylogo/cover-car.png';
   "
 />
-
-
   </div>
-
 </div>
 
   <div class="warning">
@@ -1102,35 +1053,76 @@ document.getElementById("content").innerHTML = `
 `;
 // ===== RENDER END =====
 
+    if (!data || typeof data !== "object" || !data.make) {
+      console.log("❌ BAD DATA:", raw);
+      throw new Error("Invalid API response");
+    }
+
+    // ===== RENDER BASIC (safe minimal test) =====
+  //   document.getElementById("content").innerHTML = `
+  //     <h2>${data.make} ${data.model || ""}</h2>
+  //     <p>Year: ${data.year || "-"}</p>
+  //       </div>
+  // `;
+
+  } catch (err) {
+    console.error("❌ LOAD ERROR:", err);
+    document.getElementById("content").innerHTML = "❌ Failed to load vehicle data";
+  } finally {
+    // ✅ Always stop loader
+    const loader = document.getElementById("premiumLoader");
+    if (loader) loader.style.display = "none";
+  }
+}
+// end of loadData()
+   
+
 setTimeout(() => {
   const plate = document.querySelector(".uk-plate");
   if (plate) plate.classList.remove("scan-active");
 }, 2000);
     
 
-  } catch (err) {
-    console.error("❌ LOAD ERROR:", err);
-    document.getElementById("content").innerHTML = "❌ Failed to load vehicle data";
-  }
+try {
+  // ===== YOUR RENDER CODE =====
 
+  setTimeout(() => {
+    const plate = document.querySelector(".uk-plate");
+    if (plate) plate.classList.remove("scan-active");
+  }, 2000);
+
+} catch (err) {
+  console.error("❌ LOAD ERROR:", err);
+  document.getElementById("content").innerHTML = "❌ Failed to load vehicle data";
+} finally {
+  // ✅ ALWAYS RUNS (success or error)
   const loader = document.getElementById("premiumLoader");
   if (loader) loader.style.display = "none";
 }
 
+// ===== PAYMENT (SAFE - NO DUPLICATES) =====
+let isPaying = false; // 🔥 GLOBAL LOCK
 
-// ===== PAYMENT (CLEANED) =====
 async function pay(pkg) {
+  if (isPaying) {
+    console.log("🚫 Duplicate payment blocked");
+    return;
+  }
+
+  isPaying = true;
+
   try {
     const res = await fetch(`${API}/payment/checkout`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ reg, pkg })
-});
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reg, pkg })
+    });
 
     const data = await res.json();
 
     if (!data.url) {
       alert("Payment failed");
+      isPaying = false;
       return;
     }
 
@@ -1139,10 +1131,20 @@ async function pay(pkg) {
   } catch (err) {
     console.error("❌ Payment error:", err);
     alert("Server error");
+    isPaying = false;
   }
 }
 
+let isBuyingBundle = false;
+
 function buyBundle(quantity) {
+  if (isBuyingBundle) {
+    console.log("🚫 Duplicate bundle blocked");
+    return;
+  }
+
+  isBuyingBundle = true;
+
   fetch(API + "/payment/checkout", {
     method: "POST",
     headers: {
@@ -1159,11 +1161,13 @@ function buyBundle(quantity) {
       window.location.href = data.url;
     } else {
       alert("Payment failed");
+      isBuyingBundle = false;
     }
   })
   .catch(err => {
     console.error("Bundle error:", err);
     alert("Server error");
+    isBuyingBundle = false;
   });
 }
 
@@ -1183,17 +1187,38 @@ function getCarLogo(make) {
 
 function row(label, value) {
   return `
-    <div class="row">
-      <span>${label}</span>
-      <strong>${value}</strong>
-    </div>
-  `;
+  <div class="row">
+    <span>${label}</span>
+    <strong>${value}</strong>
+  </div>
+`;
 }
 
 window.onload = async () => {
-  await handleStripeSuccess(); // 🔥 FIRST
-  const token = localStorage.getItem("token");
-  await loadData();                // 🔥 THEN LOAD DATA
+  console.log("🔥 WINDOW ONLOAD FIRED");
+  const params = new URLSearchParams(window.location.search);
+  const sessionId = params.get("session_id");
+
+  console.log("👉 ONLOAD SESSION:", sessionId);
+
+  if (sessionId && !localStorage.getItem("token")) {
+    try {
+      const res = await fetch(`${API}/payment/success?session_id=${sessionId}`);
+      const data = await res.json();
+
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("sessionId", sessionId);
+
+        window.history.replaceState({}, "", `/result.html?reg=${data.reg}`);
+      }
+
+    } catch (err) {
+      console.error("Stripe verification failed:", err);
+    }
+  }
+
+  await loadData();
 };
 
 function openBasic() {
@@ -1493,8 +1518,8 @@ function getMOTIcon(date) {
 
   </div>
 </div>
+  <script defer>
 
-<script>
   // Countdown timer (5 minutes)
   let time = 300;
   const countdownEl = document.getElementById("countdown");
