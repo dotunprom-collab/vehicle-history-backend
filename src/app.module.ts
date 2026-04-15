@@ -14,10 +14,7 @@ import { join } from 'path';
   imports: [
  ServeStaticModule.forRoot({
   rootPath: join(__dirname, 'frontend'),
-  serveStaticOptions: {
-    index: ['index.html'],
-  },
-  exclude: ['/vehicle*', '/payment*'],
+  serveRoot: '/',
 }),
 
     // ✅ DATABASE (KEEP THIS REAL)
