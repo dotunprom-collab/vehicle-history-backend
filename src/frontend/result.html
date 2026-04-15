@@ -862,39 +862,32 @@
 
 <script>
 console.log("🔥 SCRIPT STARTED");
+
 const API = "https://vehicle-history-backend-production.up.railway.app";
 
-const params = new URLSearchParams(window.location.search);
-const stripeSessionId = params.get("session_id");
-
+// ===== GET PARAMS =====
 const urlParams = new URLSearchParams(window.location.search);
-
+let reg = urlParams.get("reg");
 const sessionIdFromUrl = urlParams.get("session_id");
 
-// ✅ FIXED REG LOGIC
-let reg = urlParams.get("reg");
-
+// ===== REG STORAGE =====
 if (reg) {
   sessionStorage.setItem("reg", reg);
 } else {
   reg = sessionStorage.getItem("reg");
 }
 
-// 🔍 DEBUG (VERY IMPORTANT)
+// ===== DEBUG =====
 console.log("URL:", window.location.href);
 console.log("REG:", reg);
 console.log("SESSION ID:", sessionIdFromUrl);
 
-// 🔥 STORE STRIPE SESSION (CRITICAL)
-if (sessionIdFromUrl) {
-  localStorage.setItem("sessionId", sessionIdFromUrl);
-}
-
-async function loadData() {
+// ===== LOAD DATA =====
+async function loadData(passedToken = null) {
   console.log("🔥 loadData CALLED");
   console.log("👉 USING REG:", reg);
 
-  const token = localStorage.getItem("token");
+  const token = passedToken || localStorage.getItem("token");
 
   if (!reg) {
     document.getElementById("content").innerHTML = "❌ No registration";
@@ -902,12 +895,12 @@ async function loadData() {
   }
 
   try {
-    // const endpoint = token ? "/vehicle/full" : "/vehicle/preview";
-    const endpoint = "/vehicle/preview";
+    const endpoint = token ? "/vehicle/full" : "/vehicle/preview";
 
+    console.log("🔥 TOKEN VALUE:", token);
+    console.log("🔥 ENDPOINT CHOSEN:", endpoint);
     console.log("🔥 CALLING API:", `${API}${endpoint}`);
 
-    // ✅ Safe headers
     const headers = {
       "Content-Type": "application/json"
     };
@@ -917,204 +910,115 @@ async function loadData() {
     }
 
     console.log("🔥 ABOUT TO FETCH");
+
     const res = await fetch(`${API}${endpoint}`, {
       method: "POST",
       headers,
       body: JSON.stringify({ reg })
     });
 
-    // ✅ Handle HTTP errors
     if (!res.ok) {
       console.error("❌ HTTP ERROR:", res.status);
       throw new Error("Request failed");
     }
 
     const raw = await res.json();
-    console.log("✅ API DATA:", raw);
 
-    const data = raw.data || raw.vehicle || raw;
+    console.log("🔥 RAW RESPONSE:", raw);
 
-     // ===== FETCH IMAGE =====
-   let imageUrl = "mylogo/cover-car.png"; // 🔥 static placeholder for now
+    const data =
+      raw.data ||
+      raw.vehicle ||
+      raw.report ||
+      raw;
 
-   // ===== RENDER =====
-document.getElementById("content").innerHTML = `
-  <div class="card">
-    <div class="hero">
+    console.log("🔥 FINAL DATA:", data);
 
-  <!-- LEFT: CAR INFO -->
-  <div class="hero-left">
-    <h1 class="car-title">
-      ${data.make} ${data.model || ""}
-    </h1>
-    <div class="car-year">
-      ${data.year || "-"}
-    </div>
-  </div>
+    // ===== IMAGE =====
+    let imageUrl = "mylogo/cover-car.png";
 
-  <!-- CENTER: REG PLATE -->
-  <div class="hero-center">
-    <div class="uk-plate scan-active">
-      <div class="uk-flag">
-        🇬🇧<br>UK
+    // ===== RENDER =====
+    document.getElementById("content").innerHTML = `
+      <div class="card">
+        <div class="hero">
+
+          <div class="hero-left">
+            <h1 class="car-title">
+              ${data.make || "Unavailable"} ${data.model || ""}
+            </h1>
+            <div class="car-year">
+              ${data.year || "-"}
+            </div>
+          </div>
+
+          <div class="hero-center">
+            <div class="uk-plate scan-active">
+              <div class="uk-flag">🇬🇧<br>UK</div>
+              <div class="uk-number">${reg}</div>
+              <div class="scan-line"></div>
+            </div>
+          </div>
+
+          <div class="hero-right">
+            <img 
+              src="${imageUrl}"
+              onerror="this.src='mylogo/cover-car.png'"
+            />
+          </div>
+        </div>
+
+        <div class="warning">
+          ⚠ Vehicle may have hidden risks. Check full report.
+        </div>
+
+        <div class="specs">
+          ${specItem("Make", data.make, "🏭")}
+          ${specItem("Fuel", data.fuel, "⛽")}
+          ${specItem("Colour", data.colour, "🎨")}
+          ${specItem("MOT", formatMOT(data.motDue), getMOTIcon(data.motDue))}
+        </div>
+
+        <div class="locked">
+          ${row("Finance", "Unknown")}
+          ${row("Stolen", "Unknown")}
+          ${row("Write-off", "Unknown")}
+        </div>
+
+        <div class="pricing-container">
+          <button onclick="pay('premium')">Buy Full Report £9.99</button>
+        </div>
       </div>
-      <div class="uk-number">
-        ${reg}
-      </div>
-      <div class="scan-line"></div>
-    </div>
-  </div>
+    `;
 
-  <!-- RIGHT: CAR IMAGE -->
-  <div class="hero-right">
-  <img 
-  src="${imageUrl}"
-  alt="car"
-  onerror="
-    this.onerror=null;
-    this.src='mylogo/cover-car.png';
-  "
-/>
-  </div>
-</div>
-
-  <div class="warning">
-      ⚠ Warning: This vehicle may have hidden finance, theft or damage history.
-  </div>
-
-    <!-- ✅ KEEP ONLY ONE DATA SECTION -->
-    <div class="specs">
-
-  ${specItem("Make", data.make, "🏭")}
-  ${specItem("Fuel", data.fuel, "⛽")}
-  ${specItem("Colour", data.colour, "🎨")}
-  ${specItem("MOT", formatMOT(data.motDue), getMOTIcon(data.motDue))}
-
-</div>
-
-</div>
-
-    <div style="margin-top:25px; position:relative;">
-      <div class="locked">
-        ${row("Finance", "Unknown")}
-        ${row("Stolen", "Unknown")}
-        ${row("Write-off", "Unknown")}
-        ${row("Risk Score", "Calculating...")}
-      </div>
-
-      <div class="glass">
-        <div style="font-size:40px;">🔒</div>
-        <h3>Premium Data Locked</h3>
-        <p style="color:#6b7280;">Critical risk data hidden</p>
-      </div>
-    </div>
-
-    <div class="pricing-container">
-
-      <div class="price-card popular">
-        <div class="badge">MOST POPULAR</div>
-        <h3>Bundle 5</h3>
-        <h1>£3.99 each</h1>
-        <p>5 checks</p>
-
-        <button onclick="buyBundle(5)" class="buy-btn">
-          Buy Now £19.99
-        </button>
-      </div>
-
-      <div class="price-card">
-        <h3>Bundle 3</h3>
-        <h1>£4.99 each</h1>
-        <p>3 checks</p>
-
-        <button onclick="buyBundle(3)" class="buy-btn">
-          Buy Now £14.99
-        </button>
-      </div>
-
-      <div class="price-card">
-        <h3>Single Check</h3>
-        <h1>£9.99</h1>
-        <p>1 check</p>
-
-        <button onclick="pay('premium')" class="buy-btn">
-          Buy Now £9.99
-        </button>
-      </div>
-
-    </div>
-
-    <div style="text-align:center; margin-top:25px; font-size:14px; color:#6b7280;">
-      🔒 Secure payment • Instant report • Trusted vehicle data
-    </div>
-
-  </div>
-  
-`;
-// ===== RENDER END =====
-
-    if (!data || typeof data !== "object" || !data.make) {
-      console.log("❌ BAD DATA:", raw);
-      throw new Error("Invalid API response");
-    }
-
-    // ===== RENDER BASIC (safe minimal test) =====
-  //   document.getElementById("content").innerHTML = `
-  //     <h2>${data.make} ${data.model || ""}</h2>
-  //     <p>Year: ${data.year || "-"}</p>
-  //       </div>
-  // `;
+    // ===== ANIMATION =====
+    setTimeout(() => {
+      const plate = document.querySelector(".uk-plate");
+      if (plate) plate.classList.remove("scan-active");
+    }, 2000);
 
   } catch (err) {
     console.error("❌ LOAD ERROR:", err);
     document.getElementById("content").innerHTML = "❌ Failed to load vehicle data";
   } finally {
-    // ✅ Always stop loader
     const loader = document.getElementById("premiumLoader");
     if (loader) loader.style.display = "none";
   }
 }
-// end of loadData()
-   
 
-setTimeout(() => {
-  const plate = document.querySelector(".uk-plate");
-  if (plate) plate.classList.remove("scan-active");
-}, 2000);
-    
-
-try {
-  // ===== YOUR RENDER CODE =====
-
-  setTimeout(() => {
-    const plate = document.querySelector(".uk-plate");
-    if (plate) plate.classList.remove("scan-active");
-  }, 2000);
-
-} catch (err) {
-  console.error("❌ LOAD ERROR:", err);
-  document.getElementById("content").innerHTML = "❌ Failed to load vehicle data";
-} finally {
-  // ✅ ALWAYS RUNS (success or error)
-  const loader = document.getElementById("premiumLoader");
-  if (loader) loader.style.display = "none";
-}
-
-// ===== PAYMENT (SAFE - NO DUPLICATES) =====
-let isPaying = false; // 🔥 GLOBAL LOCK
+// ===== PAYMENT =====
+let isPaying = false;
 
 async function pay(pkg) {
-  if (isPaying) {
-    console.log("🚫 Duplicate payment blocked");
-    return;
-  }
+  if (isPaying) return;
 
   isPaying = true;
 
   try {
     const res = await fetch(`${API}/payment/checkout`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({ reg, pkg })
     });
 
@@ -1129,137 +1033,59 @@ async function pay(pkg) {
     window.location.href = data.url;
 
   } catch (err) {
-    console.error("❌ Payment error:", err);
+    console.error(err);
     alert("Server error");
     isPaying = false;
   }
 }
 
-let isBuyingBundle = false;
-
-function buyBundle(quantity) {
-  if (isBuyingBundle) {
-    console.log("🚫 Duplicate bundle blocked");
-    return;
-  }
-
-  isBuyingBundle = true;
-
-  fetch(API + "/payment/checkout", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      reg: reg,
-      bundle: quantity
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      alert("Payment failed");
-      isBuyingBundle = false;
-    }
-  })
-  .catch(err => {
-    console.error("Bundle error:", err);
-    alert("Server error");
-    isBuyingBundle = false;
-  });
-}
-
-function selectPlan(plan) {
-  console.log("Selected plan:", plan);
-}
-
-async function upgrade(pkg) {
-  await pay(pkg); // reuse payment logic
-}
-
-// ===== UTIL =====
-function getCarLogo(make) {
-  if (!make) return "";
-  return `https://logo.clearbit.com/${make.toLowerCase().replace(/\s/g, "")}.com`;
-}
-
-function row(label, value) {
-  return `
-  <div class="row">
-    <span>${label}</span>
-    <strong>${value}</strong>
-  </div>
-`;
-}
-
+// ===== ON LOAD =====
 window.onload = async () => {
-  console.log("🔥 WINDOW ONLOAD FIRED");
+  console.log("🔥 WINDOW ONLOAD");
 
   const params = new URLSearchParams(window.location.search);
   const sessionId = params.get("session_id");
 
-  console.log("👉 SESSION ID:", sessionId);
+  if (sessionId) {
+    console.log("🔥 VERIFYING PAYMENT");
 
-  // 🚨 CRITICAL CHECK
-  if (!sessionId) {
-    console.log("❌ NO SESSION ID → skipping payment verification");
-    await loadData();
-    return;
-  }
+    try {
+      const res = await fetch(`${API}/payment/success?session_id=${sessionId}`);
+      const data = await res.json();
 
-  console.log("🔥 VERIFYING PAYMENT...");
+      console.log("💰 PAYMENT RESPONSE:", data);
 
-  try {
-    const url = `${API}/payment/success?session_id=${sessionId}`;
-    console.log("🔥 CALLING:", url);
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        console.log("✅ TOKEN STORED");
 
-    const res = await fetch(url);
-    const data = await res.json();
+        // CLEAN URL
+        window.history.replaceState({}, "", `/result.html?reg=${data.reg}`);
+      }
 
-    console.log("💰 RESPONSE:", data);
-
-    // ✅ FIX: ALWAYS store token if exists
-    if (data.token) {
-      localStorage.setItem("token", data.token);
-      console.log("✅ TOKEN STORED");
-
-      // clean URL
-      window.history.replaceState({}, "", `/result.html?reg=${data.reg}`);
-    } else {
-      console.log("❌ NO TOKEN RETURNED");
+    } catch (err) {
+      console.error("❌ PAYMENT VERIFY ERROR:", err);
     }
-
-  } catch (err) {
-    console.error("❌ PAYMENT VERIFY ERROR:", err);
   }
 
-  await loadData();
+  await loadData(data.token);
 };
 
-function openBasic() {
-  const modal = document.getElementById("basicUpsell");
-
-  if (modal) {
-    modal.style.display = "flex";
-  }
+// ===== UTIL =====
+function row(label, value) {
+  return `
+    <div class="row">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `;
 }
 
 function specItem(label, value, icon) {
-  const displayValue = value && value !== "N/A"
-    ? value
-    : `<span style="color:#9ca3af;">Unavailable</span>`;
-
   return `
     <div class="spec-card">
-      <div class="spec-left">
-        <div class="spec-icon">${icon}</div>
-        <div class="spec-label">${label}</div>
-      </div>
-      <div class="spec-value">
-        ${displayValue}
-      </div>
+      <div>${icon} ${label}</div>
+      <div>${value || "Unavailable"}</div>
     </div>
   `;
 }
@@ -1267,36 +1093,20 @@ function specItem(label, value, icon) {
 function formatMOT(date) {
   if (!date) return "N/A";
 
-  const today = new Date();
-  const motDate = new Date(date);
+  const d = new Date(date);
+  if (isNaN(d)) return "N/A";
 
-  if (isNaN(motDate)) return "N/A";
-
-  if (motDate < today) {
-    return `<span class="red">Expired</span>`;
-  }
-
-  const diffDays = Math.floor((motDate - today) / (1000 * 60 * 60 * 24));
-
-  if (diffDays < 30) {
-    return `<span class="yellow">Expires soon</span>`;
-  }
-
-  return `<span class="green">Valid</span>`;
+  return d < new Date() ? "Expired" : "Valid";
 }
 
 function getMOTIcon(date) {
   if (!date) return "⚠️";
 
-  const today = new Date();
-  const motDate = new Date(date);
-
-  if (motDate < today) return "❌";
-  if ((motDate - today) / (1000 * 60 * 60 * 24) < 30) return "⚠️";
+  const d = new Date(date);
+  if (d < new Date()) return "❌";
 
   return "✅";
 }
-
 </script>
 
 <style>
