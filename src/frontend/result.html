@@ -1046,21 +1046,25 @@ window.onload = async () => {
   const params = new URLSearchParams(window.location.search);
   const sessionId = params.get("session_id");
 
+  let tokenFromPayment = null; // ✅ SAFE VARIABLE
+
   if (sessionId) {
     console.log("🔥 VERIFYING PAYMENT");
 
     try {
       const res = await fetch(`${API}/payment/success?session_id=${sessionId}`);
-      const data = await res.json();
+      const result = await res.json(); // ✅ rename to avoid confusion
 
-      console.log("💰 PAYMENT RESPONSE:", data);
+      console.log("💰 PAYMENT RESPONSE:", result);
 
-      if (data.token) {
-        localStorage.setItem("token", data.token);
+      if (result.token) {
+        localStorage.setItem("token", result.token);
+        tokenFromPayment = result.token;
+
         console.log("✅ TOKEN STORED");
 
-        // CLEAN URL
-        window.history.replaceState({}, "", `/result.html?reg=${data.reg}`);
+        // clean URL (optional but recommended)
+        window.history.replaceState({}, "", `/result.html?reg=${result.reg}`);
       }
 
     } catch (err) {
@@ -1068,7 +1072,8 @@ window.onload = async () => {
     }
   }
 
-  await loadData(data.token);
+  // ✅ NEVER USE "data" HERE
+  await loadData(tokenFromPayment);
 };
 
 // ===== UTIL =====
