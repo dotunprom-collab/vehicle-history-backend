@@ -8,8 +8,17 @@ import { Report } from './reports/report.entity';
 import { Bundle } from './bundle/bundle.entity';
 import { AuthModule } from './auth/auth.module';
 
+// ✅ ADD THESE
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+
 @Module({
   imports: [
+    // ✅ SERVE FRONTEND
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', 'frontend'),
+    }),
+
     // ✅ DATABASE
     TypeOrmModule.forRoot({
       type: 'sqlite',
@@ -19,7 +28,8 @@ import { AuthModule } from './auth/auth.module';
     }),
 
     // ✅ REGISTER ENTITY
-    TypeOrmModule.forFeature([Report,Bundle]),
+    TypeOrmModule.forFeature([Report, Bundle]),
+
     AuthModule,
   ],
 
@@ -27,7 +37,6 @@ import { AuthModule } from './auth/auth.module';
     VehicleController,
     PaymentController,
     HealthController,
-    
   ],
 
   providers: [
