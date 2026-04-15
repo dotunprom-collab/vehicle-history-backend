@@ -7,8 +7,6 @@ import { PaymentService } from './payment/payment.service';
 import { Report } from './reports/report.entity';
 import { Bundle } from './bundle/bundle.entity';
 import { AuthModule } from './auth/auth.module';
-
-// ✅ ADD THESE
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
@@ -16,10 +14,10 @@ import { join } from 'path';
   imports: [
     // ✅ SERVE FRONTEND
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'frontend'),
+      rootPath: join(__dirname, '..', 'frontend'),
     }),
 
-    // ✅ DATABASE
+    // ✅ DATABASE (KEEP THIS REAL)
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'db.sqlite',
@@ -27,9 +25,7 @@ import { join } from 'path';
       synchronize: true,
     }),
 
-    // ✅ REGISTER ENTITY
     TypeOrmModule.forFeature([Report, Bundle]),
-
     AuthModule,
   ],
 
