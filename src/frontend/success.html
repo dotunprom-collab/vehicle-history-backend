@@ -268,9 +268,10 @@ async function loadReport() {
     globalReg = reg;
 
     // 🔥 SAVE USER (LOGIN)
-    if (sessionData.userId) {
-      localStorage.setItem("token", data.token);
-    }
+    if (data.token) {
+    localStorage.setItem("token", data.token);
+    console.log("✅ TOKEN STORED");
+  }
 
     // =========================
     // 2️⃣ FETCH FULL REPORT (🔥 FIXED)
