@@ -1202,28 +1202,37 @@ window.onload = async () => {
 
   console.log("👉 SESSION ID:", sessionId);
 
-  if (sessionId && !localStorage.getItem("token")) {
-    console.log("🔥 VERIFYING PAYMENT...");
+  // 🚨 CRITICAL CHECK
+  if (!sessionId) {
+    console.log("❌ NO SESSION ID → skipping payment verification");
+    await loadData();
+    return;
+  }
 
-    // ✅ 👉 PUT IT HERE
-    console.log("🔥 CALLING SUCCESS ENDPOINT:", `${API}/payment/success?session_id=${sessionId}`);
+  console.log("🔥 VERIFYING PAYMENT...");
 
-    try {
-      const res = await fetch(`${API}/payment/success?session_id=${sessionId}`);
-      const data = await res.json();
+  try {
+    const url = `${API}/payment/success?session_id=${sessionId}`;
+    console.log("🔥 CALLING:", url);
 
-      console.log("💰 PAYMENT SUCCESS RESPONSE:", data);
+    const res = await fetch(url);
+    const data = await res.json();
 
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-        console.log("✅ TOKEN STORED");
+    console.log("💰 RESPONSE:", data);
 
-        window.history.replaceState({}, "", `/result.html?reg=${data.reg}`);
-      }
+    // ✅ FIX: ALWAYS store token if exists
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+      console.log("✅ TOKEN STORED");
 
-    } catch (err) {
-      console.error("❌ PAYMENT VERIFY FAILED:", err);
+      // clean URL
+      window.history.replaceState({}, "", `/result.html?reg=${data.reg}`);
+    } else {
+      console.log("❌ NO TOKEN RETURNED");
     }
+
+  } catch (err) {
+    console.error("❌ PAYMENT VERIFY ERROR:", err);
   }
 
   await loadData();
