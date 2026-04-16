@@ -90,15 +90,15 @@ export class VehicleService {
       // =========================
       // 3️⃣ BUNDLE LOGIC
       // =========================
-      if (!isPaid) {
+     if (uid === 'guest') {
         const hasBundle = await this.consumeBundle(uid);
 
-        if (!hasBundle) {
-          throw new Error("Payment or bundle required");
-        }
+      if (!hasBundle) {
+        throw new Error("Bundle required");
+    }
 
-        console.log("✅ Bundle used");
-      }
+      console.log("✅ Bundle used");
+    }
 
       // =========================
       // 4️⃣ FETCH FULL DATA

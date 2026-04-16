@@ -6,7 +6,8 @@ import { Query } from '@nestjs/common';
 import { UseGuards } from '@nestjs/common';
 import { JwtGuard } from '../auth/jwt.guard';
 import { Req } from '@nestjs/common';
-import { AuthenticatedRequest } from '../types/express';
+import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
 
 
 @Controller('vehicle')
@@ -27,20 +28,21 @@ export class VehicleController {
     return this.vehicleService.getPreview(body.registration);
   }
 
-@UseGuards(JwtGuard)
 @Post('full')
-getFull(
-  @Body() body: { reg: string; sessionId?: string },
-  @Req() req: AuthenticatedRequest
-) {
-  const user = req.user;
-  const userId = user?.email || 'guest';
+@UseGuards(JwtGuard)
+async full(@Req() req: any, @Body() body: any) {
 
-  return this.vehicleService.getFullReport(
-    body.reg,
-    body.sessionId,
-    userId
-  );
+  const user = req.user;
+
+  console.log("🔥 USER FROM TOKEN:", user);
+
+  if (!user || !user.sessionId) {
+    throw new Error("Payment required");
+  }
+
+  const reg = body.registration || body.reg || user.reg;
+
+  return this.vehicleService.getFullReport(reg);
 }
 
   @Post('pdf')

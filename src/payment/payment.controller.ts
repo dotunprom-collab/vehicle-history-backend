@@ -11,7 +11,7 @@ export class PaymentController {
 
   // 💳 CREATE CHECKOUT SESSION (FIXED FOR BUNDLES)
   @Post('checkout')
-async checkout(
+  async checkout(
   @Body() body: { reg: string; pkg?: string; bundle?: number }
 ) {
   return this.paymentService.createCheckoutSession(

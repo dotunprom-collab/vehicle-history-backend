@@ -268,22 +268,25 @@ async function loadReport() {
     globalReg = reg;
 
     // 🔥 SAVE USER (LOGIN)
-    if (data.token) {
-    localStorage.setItem("token", data.token);
-    console.log("✅ TOKEN STORED");
+    if (sessionData.token) {
+      localStorage.setItem("token", sessionData.token);
+      console.log("✅ TOKEN STORED");
   }
 
     // =========================
     // 2️⃣ FETCH FULL REPORT (🔥 FIXED)
     // =========================
+    const token = localStorage.getItem("token");
+
     const res2 = await fetch(`${API}/vehicle/full`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        registration: reg,
-        sessionId,
-        userId
-      })
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`   // ✅ CRITICAL
+      },
+      // body: JSON.stringify({
+      //   registration: reg
+      // })
     });
 
     const data = await res2.json();
