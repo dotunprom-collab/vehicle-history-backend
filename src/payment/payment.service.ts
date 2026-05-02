@@ -16,10 +16,6 @@ export class PaymentService {
   const stripeKey =
     process.env.STRIPE_SECRET_KEY;
 
-  console.log(
-    stripeKey?.slice(0, 10)
-  );
-
   if (!stripeKey) {
 
     this.stripe = null;
