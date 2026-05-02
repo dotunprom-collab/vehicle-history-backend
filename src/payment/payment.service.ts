@@ -242,6 +242,20 @@ console.log(
   metadata
 );
 
+console.log(
+  '🔥 FRONTEND_URL:',
+  process.env.FRONTEND_URL
+);
+
+console.log(
+  '🔥 SUCCESS URL:',
+  `${process.env.FRONTEND_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`
+);
+
+console.log(
+  '🔥 CANCEL URL:',
+  `${process.env.FRONTEND_URL}/cancel.html`
+);
   // ─────────────────────────────
   // CREATE STRIPE SESSION
   // ─────────────────────────────
