@@ -1,66 +1,65 @@
 import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { PaymentService } from './payment.service';
-import { AuthService } from '../auth/auth.service';
 
 @Controller('payment')
 export class PaymentController {
-  constructor
-  (private readonly paymentService: PaymentService, 
-  private authService: AuthService,
-  ) {}
+  constructor(private readonly paymentService: PaymentService) {}
 
-  // 💳 CREATE CHECKOUT SESSION (FIXED FOR BUNDLES)
+  // =========================
+  // 💳 CREATE CHECKOUT SESSION
+  // =========================
   @Post('checkout')
-  async checkout(
-  @Body() body: { reg: string; pkg?: string; bundle?: number }
+  async checkout(@Body() body: any) {
+    const session = await this.paymentService.createCheckoutSession(body);
+    return { url: session.url };
+  }
+
+  // =========================
+  // ✅ STRIPE SUCCESS (NO JWT)
+  // =========================
+  @Get('success')
+  async success(@Query('session_id') sessionId: string) {
+    try {
+      if (!sessionId) {
+        return { error: 'Missing session ID' };
+      }
+
+      const session = await this.paymentService.getSession(sessionId);
+if (!session || 'error' in session) {
+  return { error: 'Session not found' };
+}
+if (session.payment_status !== 'paid') {
+  return { error: 'Payment not completed' };
+}
+const reg = session.metadata?.reg;
+const email =
+  session.customer_details?.email ||
+  session.customer_email ||
+  'guest';
+const bundle = session.metadata?.bundle;
+if (
+  session.metadata?.type === 'bundle'
 ) {
-  return this.paymentService.createCheckoutSession(
-    body.reg,
-    body.pkg,
-    body.bundle
+
+  await this.paymentService.createBundle(
+
+    email,
+
+    Number(session.metadata.quantity || 1),
+
+    session.metadata.tier || 'standard',
   );
 }
 
-  // ✅ STRIPE SUCCESS (SECURE)
-  @Get('success')
-  async success(@Query('session_id') sessionId: string) {
-  try {
-    if (!sessionId) {
-      return { error: 'Missing session ID' };
+      return {
+        reg,
+        email,
+        sessionId, // ✅ THIS replaces JWT
+        status: 'paid',
+      };
+
+    } catch (err) {
+      return { error: 'Failed to retrieve session' };
     }
-
-    const session = await this.paymentService.getSession(sessionId);
-
-    if (!session || 'error' in session) {
-      return { error: 'Session not found' };
-    }
-
-    if (session.payment_status !== 'paid') {
-      return { error: 'Payment not completed' };
-    }
-
-    const reg = session.metadata?.reg;
-    const email = session.customer_email || 'guest';
-
-    if (!reg) {
-      return { error: 'No registration found' };
-    }
-
-    // 🔥 GENERATE JWT
-    const token = this.authService.generateToken({
-      email,
-      reg,
-      sessionId,
-    });
-
-    return {
-      reg,
-      token, // 🔥 SEND TOKEN
-      status: 'paid',
-    };
-
-  } catch (err) {
-    return { error: 'Failed to retrieve session' };
   }
-}
 }

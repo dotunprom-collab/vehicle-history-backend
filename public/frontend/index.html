@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CheapRegCheck — UK Vehicle History</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --green:        #16a34a;
+  --green-mid:    #22c55e;
+  --green-pale:   #dcfce7;
+  --ink:          #0a0a0a;
+  --ink-2:        #1c1c1e;
+  --muted:        #6b6b6b;
+  --muted-2:      #aeaeb2;
+  --surface:      #f5f5f7;
+  --border:       rgba(0,0,0,0.08);
+  --plate-yellow: #F8D347;
+  --nav-h:        56px;
+  --bg:           #fafafa;
+  --card-bg:      #ffffff;
+  --card-border:  rgba(0,0,0,0.08);
+  --text:         #0a0a0a;
+  --text-muted:   #6b6b6b;
+}
+
+/* Logo system — see also @media(prefers-color-scheme:dark) below for the swap */
+.logo-img{
+  height:38px;
+  width:auto;
+  max-width:200px;
+  display:block;
+  object-fit:contain;
+  transition:opacity .2s ease;
+}
+.logo-dark{display:none;}
+
+@media (prefers-color-scheme: dark) {
+
+  :root {
+    --bg:          #0a0a0a;
+    --card-bg:     #141414;
+    --card-border: rgba(255,255,255,0.07);
+    --surface:     #111111;
+    --text:        #f5f5f7;
+    --text-muted:  #8e8e93;
+    --border:      rgba(255,255,255,0.07);
+    --muted:       #8e8e93;
+  }
+
+  .logo-light{
+    display:none;
+  }
+
+  .logo-dark{
+    display:block;
+  }
+
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* grain */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9000;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  height: var(--nav-h);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 clamp(20px,4vw,48px);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: saturate(200%) blur(24px);
+  -webkit-backdrop-filter: saturate(200%) blur(24px);
+  border-bottom: 1px solid var(--border);
+  transition: box-shadow 0.3s;
+}
+nav.scrolled { box-shadow: 0 1px 24px rgba(0,0,0,0.1); }
+
+.nav-logo{
+  display:flex;
+  align-items:center;
+
+  text-decoration:none;
+  flex-shrink:0;
+
+  padding-left:8px;
+}
+/* .logo-mark {
+  width: 30px; height: 30px; background: var(--green); border-radius: 9px;
+  display: grid; place-items: center; box-shadow: 0 2px 8px rgba(22,163,74,0.35);
+}
+.logo-mark svg { width: 17px; height: 17px; }
+.logo-text { font-size: 15.5px; font-weight: 600; color: var(--text); letter-spacing: -0.4px; }
+.logo-text span { color: var(--green); } */
+
+/* (logo-img + logo-dark consolidated above) */
+
+.nav-center {
+  display: flex; align-items: center; gap: 2px;
+  position: absolute; left: 50%; transform: translateX(-50%);
+}
+.nav-center a {
+  font-size: 14px; font-weight: 400; color: var(--text-muted);
+  text-decoration: none; padding: 7px 15px; border-radius: 9px;
+  transition: color .15s, background .15s;
+}
+.nav-center a:hover { color: var(--text); background: var(--surface); }
+
+.nav-right{
+  margin-left:auto;
+
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.nav-pill {
+  font-size: 14px; font-weight: 600; color: white; background: var(--green);
+  text-decoration: none; padding: 8px 18px; border-radius: 999px;
+  transition: background .15s, box-shadow .15s, transform .1s; white-space: nowrap;
+}
+.nav-pill:hover { background: #15803d; box-shadow: 0 4px 16px rgba(22,163,74,0.4); transform: translateY(-1px); }
+
+.hamburger {
+  display: none; flex-direction: column; gap: 5px; cursor: pointer;
+  padding: 6px; border-radius: 8px; border: none; background: none;
+}
+.hamburger span { display: block; width: 22px; height: 2px; background: var(--text); border-radius: 2px; transition: transform .25s, opacity .25s; }
+.hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.mobile-menu {
+  display: none; position: fixed; top: var(--nav-h); left: 0; right: 0;
+  background: color-mix(in srgb, var(--bg) 96%, transparent);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px 24px; z-index: 999; flex-direction: column; gap: 4px;
+  transform: translateY(-10px); opacity: 0; transition: transform .25s ease, opacity .25s ease;
+}
+.mobile-menu.open { transform: translateY(0); opacity: 1; }
+.mobile-menu a { font-size: 16px; font-weight: 500; color: var(--text); text-decoration: none; padding: 12px 16px; border-radius: 12px; transition: background .15s; }
+.mobile-menu a:hover { background: var(--surface); }
+.mobile-menu .mob-cta { background: var(--green); color: white; text-align: center; margin-top: 8px; font-weight: 600; }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100svh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: calc(var(--nav-h) + 64px) clamp(20px,6vw,60px) 80px;
+  position: relative; overflow: hidden;
+}
+.hero-bg { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.orb {
+  position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.55;
+  animation: orbFloat 12s ease-in-out infinite alternate;
+}
+.orb-1 { width: 560px; height: 560px; background: radial-gradient(circle, rgba(22,163,74,0.22), transparent 70%); top: -80px; left: 50%; transform: translateX(-50%); }
+.orb-2 { width: 360px; height: 360px; background: radial-gradient(circle, rgba(34,197,94,0.13), transparent 70%); bottom: 8%; right: 4%; animation-delay: -4s; }
+.orb-3 { width: 280px; height: 280px; background: radial-gradient(circle, rgba(248,211,71,0.1), transparent 70%); bottom: 18%; left: 4%; animation-delay: -8s; }
+@keyframes orbFloat { 0% { transform: translateY(0) scale(1); } 100% { transform: translateY(-28px) scale(1.04); } }
+.orb-1 { animation: orbFloat1 12s ease-in-out infinite alternate; }
+@keyframes orbFloat1 { 0% { transform: translateX(-50%) translateY(0); } 100% { transform: translateX(-50%) translateY(-28px); } }
+
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(22,163,74,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(22,163,74,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black, transparent);
+}
+
+.hero-content { position: relative; z-index: 1; max-width: 780px; width: 100%; }
+
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 999px;
+  padding: 6px 16px 6px 8px; font-size: 13px; color: var(--text-muted); margin-bottom: 36px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06); animation: fadeUp .7s cubic-bezier(.16,1,.3,1) both;
+}
+.badge-pip { width: 22px; height: 22px; background: var(--green-pale); border-radius: 50%; display: grid; place-items: center; }
+.badge-pip svg { width: 12px; height: 12px; }
+.live-dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; display: inline-block; animation: livePulse 2s ease infinite; }
+@keyframes livePulse { 0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,.5); } 50% { box-shadow: 0 0 0 5px rgba(22,163,74,0); } }
+
+.hero-h1 {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: clamp(52px, 8.5vw, 88px); line-height: 1.03; letter-spacing: -3px;
+  color: var(--text); margin-bottom: 24px;
+  animation: fadeUp .7s .08s cubic-bezier(.16,1,.3,1) both;
+}
+.hero-h1 em {
+  font-style: italic;
+  background: linear-gradient(135deg, var(--green), var(--green-mid));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+.hero-sub {
+  font-size: clamp(15px,2vw,18px); line-height: 1.65; color: var(--text-muted);
+  max-width: 460px; margin: 0 auto 52px; font-weight: 300;
+  animation: fadeUp .7s .16s cubic-bezier(.16,1,.3,1) both;
+}
+
+/* search */
+.search-wrap { animation: fadeUp .7s .24s cubic-bezier(.16,1,.3,1) both; width: 100%; max-width: 580px; margin: 0 auto 20px; }
+.search-card {
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; padding: 16px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.03), 0 4px 24px rgba(0,0,0,.07), 0 0 64px rgba(22,163,74,.06);
+}
+.search-row { display: flex; align-items: center; gap: 10px; }
+
+.uk-tag {
+  flex-shrink: 0; background: var(--green); border-radius: 12px; height: 56px;
+  padding: 0 16px; display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600; color: white; white-space: nowrap;
+}
+
+.plate-wrap {
+  flex: 1; background: var(--plate-yellow); border-radius: 12px; height: 56px;
+  display: flex; align-items: center; padding: 0 16px 0 20px;
+  position: relative; overflow: hidden;
+}
+.plate-wrap::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 7px; background: #1a237e; border-radius: 12px 0 0 12px;
+}
+.plate-input {
+  border: none; outline: none; background: transparent;
+  font-family: 'Geist', sans-serif; font-size: 20px; font-weight: 700;
+  letter-spacing: 4px; color: #0d0d0d; text-transform: uppercase;
+  width: 100%; text-align: center; caret-color: var(--green);
+}
+.plate-input::placeholder { letter-spacing: 2px; color: rgba(0,0,0,.28); font-weight: 400; font-size: 15px; }
+
+.check-btn {
+  flex-shrink: 0; background: var(--green); color: white; border: none; border-radius: 12px;
+  height: 56px; padding: 0 24px; font-family: 'Geist', sans-serif; font-size: 15px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; position: relative; overflow: hidden;
+  transition: background .15s, transform .12s, box-shadow .15s;
+}
+.check-btn::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.12), transparent); border-radius: inherit; }
+.check-btn:hover { background: #15803d; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(22,163,74,.4); }
+.check-btn:active { transform: translateY(0); box-shadow: none; }
+
+.search-meta { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; font-size: 12.5px; color: var(--text-muted); flex-wrap: wrap; }
+.meta-item { display: flex; align-items: center; gap: 5px; }
+.meta-item svg { width: 13px; height: 13px; opacity: .5; flex-shrink: 0; }
+.meta-sep { opacity: .25; }
+
+/* proof */
+.proof-row { display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 44px; flex-wrap: wrap; animation: fadeUp .7s .32s cubic-bezier(.16,1,.3,1) both; }
+.proof-chip { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+.proof-chip strong { font-weight: 600; color: var(--text); }
+.proof-sep { width: 1px; height: 18px; background: var(--border); }
+
+/* report preview */
+.hero-visual { margin-top: 72px; width: 100%; max-width: 780px; animation: fadeUp .9s .4s cubic-bezier(.16,1,.3,1) both; }
+.report-preview {
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.04), 0 20px 60px rgba(0,0,0,.12), 0 4px 16px rgba(0,0,0,.06);
+}
+.report-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+.report-dots { display: flex; gap: 6px; }
+.report-dots span { width: 11px; height: 11px; border-radius: 50%; }
+.rd1 { background: #ff5f57; } .rd2 { background: #febc2e; } .rd3 { background: #28c840; }
+.report-url { flex: 1; background: var(--card-bg); border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; font-size: 12px; color: var(--text-muted); text-align: center; }
+.report-body { padding: 24px; display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.r-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+.r-lbl { font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+.r-val { font-size: 19px; font-weight: 700; letter-spacing: -.5px; margin-bottom: 4px; }
+.r-sub { font-size: 12px; color: var(--text-muted); font-weight: 300; }
+.r-pass { color: var(--green); }
+.s-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; margin-top: 8px; background: #f0fdf4; color: var(--green); }
+.s-pill svg { width: 10px; height: 10px; }
+
+/* ── FEATURES ── */
+.sec { padding: clamp(72px,10vw,120px) clamp(20px,5vw,60px); }
+.sec-surface { background: var(--surface); }
+.sec-tag { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--green); text-align: center; margin-bottom: 14px; }
+.sec-h2 { font-family: 'Instrument Serif', serif; font-size: clamp(36px,5vw,56px); letter-spacing: -2px; line-height: 1.06; text-align: center; color: var(--text); margin-bottom: clamp(48px,6vw,72px); }
+.sec-h2 em { font-style: italic; color: var(--green); }
+
+.f-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; max-width: 1000px; margin: 0 auto; }
+.f-card {
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 20px; padding: 28px 24px;
+  position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s; cursor: default;
+}
+.f-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg,var(--green),var(--green-mid)); opacity: 0; transition: opacity .2s; }
+.f-card:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(0,0,0,.1); }
+.f-card:hover::before { opacity: 1; }
+.f-icon { width: 44px; height: 44px; background: var(--green-pale); border-radius: 12px; display: grid; place-items: center; margin-bottom: 18px; }
+.f-icon svg { width: 22px; height: 22px; color: var(--green); }
+.f-card h3 { font-size: 15.5px; font-weight: 600; color: var(--text); margin-bottom: 8px; letter-spacing: -.3px; }
+.f-card p { font-size: 14px; line-height: 1.65; color: var(--text-muted); font-weight: 300; }
+
+/* ── STEPS ── */
+.steps-wrap { max-width: 900px; margin: 0 auto; }
+.steps-grid { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: start; }
+.step-arrow { align-self: flex-start; padding-top: 22px; color: var(--border); }
+.step-arrow svg { width: 24px; height: 24px; opacity: .4; }
+.step-item { text-align: center; padding: 0 16px; }
+.step-num {
+  width: 52px; height: 52px; border-radius: 50%; background: var(--card-bg);
+  border: 1.5px solid var(--card-border); display: grid; place-items: center;
+  margin: 0 auto 20px; font-size: 15px; font-weight: 700; color: var(--green);
+  box-shadow: 0 2px 12px rgba(0,0,0,.06); transition: background .2s, border-color .2s, color .2s;
+}
+.step-item:hover .step-num { background: var(--green); color: white; border-color: var(--green); }
+.step-item h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 8px; letter-spacing: -.3px; }
+.step-item p { font-size: 13.5px; line-height: 1.65; color: var(--text-muted); font-weight: 300; }
+
+/* ── TESTIMONIALS ── */
+.testi-bg { background: #0d0d0d; }
+.t-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; max-width: 1000px; margin: 0 auto; }
+.t-card { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); border-radius: 20px; padding: 28px 24px; display: flex; flex-direction: column; gap: 16px; transition: background .2s; }
+.t-card:hover { background: rgba(255,255,255,.07); }
+.t-stars { color: #fbbf24; font-size: 14px; letter-spacing: 2px; }
+.t-text { font-size: 14.5px; line-height: 1.7; color: rgba(255,255,255,.65); font-weight: 300; flex: 1; }
+.t-author { display: flex; align-items: center; gap: 10px; }
+.t-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--green); display: grid; place-items: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; }
+.t-name { font-size: 13.5px; font-weight: 600; color: white; }
+.t-meta { font-size: 12px; color: rgba(255,255,255,.35); }
+
+/* ── CTA ── */
+.cta-band { padding: clamp(72px,10vw,120px) clamp(20px,5vw,60px); text-align: center; position: relative; overflow: hidden; }
+.cta-band::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 600px; height: 400px; background: radial-gradient(ellipse, rgba(22,163,74,.1), transparent 70%); pointer-events: none; }
+.cta-band h2 { font-family: 'Instrument Serif', serif; font-size: clamp(36px,5vw,56px); letter-spacing: -2px; color: var(--text); margin-bottom: 16px; }
+.cta-band p { font-size: 16px; color: var(--text-muted); font-weight: 300; margin-bottom: 40px; }
+.cta-big {
+  display: inline-flex; align-items: center; gap: 10px; background: var(--green); color: white;
+  font-family: 'Geist', sans-serif; font-size: 16px; font-weight: 600; text-decoration: none;
+  padding: 16px 36px; border-radius: 999px; border: none; cursor: pointer;
+  transition: background .15s, transform .12s, box-shadow .15s; letter-spacing: -.2px;
+}
+.cta-big:hover { background: #15803d; transform: translateY(-2px); box-shadow: 0 12px 36px rgba(22,163,74,.4); }
+.cta-big svg { width: 18px; height: 18px; }
+
+/* ── FOOTER ── */
+footer { background: #050505; border-top: 1px solid rgba(255,255,255,.05); padding: 56px clamp(20px,5vw,60px) 32px; }
+.ft { max-width: 1000px; margin: 0 auto; }
+.ft-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 40px; margin-bottom: 48px; }
+.ft-brand { font-family: 'Instrument Serif', serif; font-size: 22px; color: white; margin-bottom: 10px; letter-spacing: -.5px; }
+.ft-brand span { color: var(--green); }
+.ft-blurb { font-size: 13px; line-height: 1.7; color: rgba(255,255,255,.3); font-weight: 300; max-width: 240px; }
+.ft-cols { display: flex; gap: 48px; flex-wrap: wrap; }
+.ft-col h4 { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,.35); margin-bottom: 16px; }
+.ft-col a { display: block; font-size: 13px; font-weight: 300; color: rgba(255,255,255,.45); text-decoration: none; margin-bottom: 10px; transition: color .15s; }
+.ft-col a:hover { color: rgba(255,255,255,.85); }
+.ft-bottom { padding-top: 28px; border-top: 1px solid rgba(255,255,255,.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 12px; color: rgba(255,255,255,.22); }
+.ft-legal { display: flex; gap: 20px; }
+.ft-legal a { color: rgba(255,255,255,.22); text-decoration: none; transition: color .15s; }
+.ft-legal a:hover { color: rgba(255,255,255,.6); }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+.reveal.in { opacity: 1; transform: none; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 800px) { .f-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) {
+  .nav-center { display: none; }
+  .hamburger { display: flex; }
+  .mobile-menu { display: flex; }
+  .f-grid { grid-template-columns: 1fr; }
+  .t-grid { grid-template-columns: 1fr; }
+  .steps-grid { grid-template-columns: 1fr; gap: 32px; }
+  .step-arrow { display: none; }
+  .report-body { grid-template-columns: 1fr 1fr; }
+  .proof-sep { display: none; }
+  .hero-h1 { letter-spacing: -2px; }
+}
+@media (max-width: 380px) {
+  .search-row { flex-wrap: wrap; }
+  .plate-wrap { order: -1; flex: 1 0 100%; }
+  .uk-tag, .check-btn { flex: 1; justify-content: center; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- Nav is injected from /partials/nav.html by /partials/nav-loader.js -->
+<div id="nav-mount"></div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="hero-grid"></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="badge-pip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </span>
+      Trusted by 50,000+ UK buyers &nbsp;<span class="live-dot"></span>&nbsp; live checks
+    </div>
+
+    <h1 class="hero-h1">Know your vehicle's<br><em>complete history</em></h1>
+    <p class="hero-sub">Instant MOT, tax, finance, and stolen checks from official UK databases — from just £1.99.</p>
+
+    <div class="search-wrap" id="search">
+      <div class="search-card">
+        <div class="search-row">
+          <div class="uk-tag">
+            <svg width="22" height="16" viewBox="0 0 60 40">
+              <rect width="60" height="40" fill="#012169"/>
+              <path d="M0 0L60 40M60 0L0 40" stroke="white" stroke-width="8"/>
+              <path d="M0 0L60 40M60 0L0 40" stroke="#C8102E" stroke-width="4"/>
+              <path d="M30 0V40M0 20H60" stroke="white" stroke-width="12"/>
+              <path d="M30 0V40M0 20H60" stroke="#C8102E" stroke-width="7"/>
+            </svg>
+            UK
+          </div>
+          <div class="plate-wrap">
+            <input class="plate-input" id="reg" type="text" placeholder="AB12 CDE" maxlength="8" autocomplete="off" spellcheck="false"/>
+          </div>
+          <button class="check-btn" onclick="checkVehicle()">Check →</button>
+        </div>
+        <div class="search-meta">
+          <span class="meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Instant results
+          </span>
+          <span class="meta-sep">·</span>
+          <span class="meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Official DVLA data
+          </span>
+          <span class="meta-sep">·</span>
+          <span class="meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            <span id="cnt">12</span> checks in last hour
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="proof-row">
+      <div class="proof-chip"><span style="color:#fbbf24;letter-spacing:2px;font-size:14px;">★★★★★</span> <strong>4.8</strong> from 2,300 reviews</div>
+      <div class="proof-sep"></div>
+      <div class="proof-chip"><strong>50,000+</strong> vehicles checked</div>
+      <div class="proof-sep"></div>
+      <div class="proof-chip">From <strong>£1.99</strong></div>
+    </div>
+
+    <!-- Report preview -->
+    <div class="hero-visual">
+      <div class="report-preview">
+        <div class="report-bar">
+          <div class="report-dots"><span class="rd1"></span><span class="rd2"></span><span class="rd3"></span></div>
+          <div class="report-url">cheapregcheck.co.uk/report/AB12CDE</div>
+        </div>
+        <div class="report-body">
+          <div class="r-tile">
+            <div class="r-lbl">MOT Status</div>
+            <div class="r-val r-pass">Valid</div>
+            <div class="r-sub">Expires Sep 2025</div>
+            <div class="s-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Pass</div>
+          </div>
+          <div class="r-tile">
+            <div class="r-lbl">Finance</div>
+            <div class="r-val r-pass">Clear</div>
+            <div class="r-sub">No outstanding debt</div>
+            <div class="s-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Clear</div>
+          </div>
+          <div class="r-tile">
+            <div class="r-lbl">Stolen Check</div>
+            <div class="r-val r-pass">Not stolen</div>
+            <div class="r-sub">PNC database clear</div>
+            <div class="s-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Clear</div>
+          </div>
+          <div class="r-tile">
+            <div class="r-lbl">Tax Status</div>
+            <div class="r-val r-pass">Taxed</div>
+            <div class="r-sub">Until Dec 2024</div>
+            <div class="s-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Valid</div>
+          </div>
+          <div class="r-tile">
+            <div class="r-lbl">Write-off</div>
+            <div class="r-val r-pass">None</div>
+            <div class="r-sub">No insurance record</div>
+            <div class="s-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Clear</div>
+          </div>
+          <div class="r-tile">
+            <div class="r-lbl">Mileage</div>
+            <div class="r-val">34,201</div>
+            <div class="r-sub">Consistent history</div>
+            <div class="s-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Verified</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="sec sec-surface">
+  <p class="sec-tag reveal">What's included</p>
+  <h2 class="sec-h2 reveal">Everything before<br><em>you commit</em></h2>
+  <div class="f-grid">
+    <div class="f-card reveal">
+      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+      <h3>MOT History</h3>
+      <p>Full pass/fail records, advisory notes, and expiry dates direct from the DVSA database.</p>
+    </div>
+    <div class="f-card reveal" style="transition-delay:.06s">
+      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+      <h3>Finance Check</h3>
+      <p>Confirm there's no outstanding loan, HP, or PCP agreement tied to the vehicle.</p>
+    </div>
+    <div class="f-card reveal" style="transition-delay:.12s">
+      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+      <h3>Stolen Status</h3>
+      <p>Cross-referenced against national police databases to confirm no theft record.</p>
+    </div>
+    <div class="f-card reveal" style="transition-delay:.18s">
+      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+      <h3>Tax &amp; SORN</h3>
+      <p>Current tax status, renewal dates, and SORN declarations from DVLA records.</p>
+    </div>
+    <div class="f-card reveal" style="transition-delay:.24s">
+      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+      <h3>Write-off Check</h3>
+      <p>Detect insurance write-off categories A, B, S &amp; N from UK insurer records.</p>
+    </div>
+    <div class="f-card reveal" style="transition-delay:.30s">
+      <div class="f-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <h3>Mileage Verify</h3>
+      <p>Spot clocking and discrepancies across the full recorded service history.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="sec">
+  <div class="steps-wrap">
+    <p class="sec-tag reveal">Simple process</p>
+    <h2 class="sec-h2 reveal">Three steps to<br><em>total clarity</em></h2>
+    <div class="steps-grid">
+      <div class="step-item reveal">
+        <div class="step-num">1</div>
+        <h3>Enter Registration</h3>
+        <p>Type any UK number plate — new or old format, spaces don't matter.</p>
+      </div>
+      <div class="step-arrow reveal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </div>
+      <div class="step-item reveal" style="transition-delay:.1s">
+        <div class="step-num">2</div>
+        <h3>Choose a Package</h3>
+        <p>Pick basic or full history — comprehensive checks from just £1.99.</p>
+      </div>
+      <div class="step-arrow reveal" style="transition-delay:.1s">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 19 12"/></svg>
+      </div>
+      <div class="step-item reveal" style="transition-delay:.2s">
+        <div class="step-num">3</div>
+        <h3>Get Your Report</h3>
+        <p>Receive a full, readable report instantly — no waiting, no jargon.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="sec testi-bg">
+  <p class="sec-tag reveal" style="color:#22c55e;">Reviews</p>
+  <h2 class="sec-h2 reveal" style="color:white;">Loved across<br><em style="color:#22c55e;">the UK</em></h2>
+  <div class="t-grid">
+    <div class="t-card reveal">
+      <div class="t-stars">★★★★★</div>
+      <p class="t-text">"Saved me from buying a car with outstanding finance. The report appeared in seconds — genuinely worth every penny."</p>
+      <div class="t-author"><div class="t-avatar">JM</div><div><div class="t-name">James M.</div><div class="t-meta">Manchester · 3 days ago</div></div></div>
+    </div>
+    <div class="t-card reveal" style="transition-delay:.08s">
+      <div class="t-stars">★★★★★</div>
+      <p class="t-text">"Used it before buying my daughter's first car. The MOT history alone was eye-opening. Really easy to read too."</p>
+      <div class="t-author"><div class="t-avatar">SK</div><div><div class="t-name">Sarah K.</div><div class="t-meta">Bristol · 1 week ago</div></div></div>
+    </div>
+    <div class="t-card reveal" style="transition-delay:.16s">
+      <div class="t-stars">★★★★☆</div>
+      <p class="t-text">"Clean interface, instant results, and the cheapest I found online. I've now used it three times. Wouldn't buy without it."</p>
+      <div class="t-author"><div class="t-avatar">RL</div><div><div class="t-name">Ryan L.</div><div class="t-meta">Leeds · 2 weeks ago</div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-band">
+  <h2 class="reveal">Ready to check your plate?</h2>
+  <p class="reveal">Join 50,000+ UK buyers who checked before they bought.</p>
+  <a class="cta-big reveal" href="#search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Check a plate for free
+  </a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="ft">
+    <div class="ft-top">
+      <div>
+        <img src="./mylogo/logo-light.png" style="height:40px;">
+        <p class="ft-blurb">UK vehicle history checks powered by official DVLA and DVSA data sources. Fast, accurate, affordable.</p>
+      </div>
+      <div class="ft-cols">
+        <div class="ft-col">
+          <h4>Product</h4>
+          <a href="pricing.html">Pricing</a>
+          <a href="#">Sample Report</a>
+          <a href="#">API Access</a>
+        </div>
+        <div class="ft-col">
+          <h4>Company</h4>
+          <a href="contact.html">Contact</a>
+          <a href="#">About</a>
+          <a href="#">Blog</a>
+        </div>
+        <div class="ft-col">
+          <h4>Legal</h4>
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Cookies</a>
+        </div>
+      </div>
+    </div>
+    <div class="ft-bottom">
+      <span>© 2026 CheapRegCheck UK. All rights reserved.</span>
+      <div class="ft-legal">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Sitemap</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* check vehicle */
+function checkVehicle() {
+  const el = document.getElementById('reg');
+  const reg = el.value.trim().toUpperCase().replace(/\s/g,'');
+  if (!reg) { el.focus(); return; }
+  window.location.href = `/result.html?reg=${reg}`;
+}
+document.getElementById('reg').addEventListener('keydown', e => { if (e.key === 'Enter') checkVehicle(); });
+document.getElementById('reg').addEventListener('input', function() {
+  const p = this.selectionStart; this.value = this.value.toUpperCase(); this.setSelectionRange(p,p);
+});
+
+// /* mobile menu */
+// const burger = document.getElementById('burger');
+// const mob = document.getElementById('mob');
+// burger.addEventListener('click', () => { burger.classList.toggle('open'); mob.classList.toggle('open'); });
+// mob.querySelectorAll('a').forEach(a => a.addEventListener('click', () => { burger.classList.remove('open'); mob.classList.remove('open'); }));
+
+/* scroll reveal */
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); }});
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+/* nav scroll shadow */
+const navEl = document.getElementById('nav');
+window.addEventListener('scroll', () => { navEl.classList.toggle('scrolled', window.scrollY > 20); }, { passive: true });
+
+/* live counter */
+const cnt = document.getElementById('cnt');
+let n = 12;
+setInterval(() => {
+  if (Math.random() > 0.55) {
+    n += Math.floor(Math.random()*2)+1;
+    cnt.textContent = n;
+    cnt.style.color = '#16a34a';
+    setTimeout(() => cnt.style.color = '', 700);
+  }
+}, 4500);
+</script>
+<script src="/partials/nav-loader.js" defer></script>
+</body>
+</html>

@@ -9,23 +9,27 @@ import { Bundle } from './bundle/bundle.entity';
 import { AuthModule } from './auth/auth.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { RiskService } from './vehicle/risk.service';
+import { ConsumedSession } from './payment/consumed-session.entity';
 
 @Module({
   imports: [
- ServeStaticModule.forRoot({
-  rootPath: join(__dirname, 'frontend'),
-  serveRoot: '/',
-}),
+    // ✅ SERVE FRONTEND (FIXED)
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'public/frontend'),
+      serveRoot: '/',
+      exclude: ['/api*'], // 🔥 prevents API conflicts
+    }),
 
-    // ✅ DATABASE (KEEP THIS REAL)
+    // ✅ DATABASE
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'db.sqlite',
-      entities: [Report, Bundle],
+      entities: [Report,Bundle,ConsumedSession],
       synchronize: true,
     }),
 
-    TypeOrmModule.forFeature([Report, Bundle]),
+    TypeOrmModule.forFeature([Report,Bundle,ConsumedSession]),
     AuthModule,
   ],
 
@@ -38,6 +42,7 @@ import { join } from 'path';
   providers: [
     VehicleService,
     PaymentService,
+    RiskService,
   ],
 })
 export class AppModule {}

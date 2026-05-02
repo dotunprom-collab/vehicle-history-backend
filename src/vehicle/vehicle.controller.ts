@@ -3,46 +3,40 @@ import { VehicleService } from './vehicle.service';
 import { Response } from 'express';
 import PDFDocument from 'pdfkit';
 import { Query } from '@nestjs/common';
-import { UseGuards } from '@nestjs/common';
-import { JwtGuard } from '../auth/jwt.guard';
-import { Req } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { Request } from 'express';
-
 
 @Controller('vehicle')
 export class VehicleController {
   constructor(private readonly vehicleService: VehicleService) {}
   
 
-  @Get('image')
-  getImage(
-    @Query('make') make: string,
-    @Query('model') model?: string
-) {
-  return this.vehicleService.getVehicleImage(make, model);
-}
+//   @Get('image')
+//   getImage(
+//     @Query('make') make: string,
+//     @Query('model') model?: string
+// ) {
+//   return this.vehicleService.getVehicleImage(make, model);
+// }
 
   @Post('preview')
   async preview(@Body() body: { registration: string }) {
     return this.vehicleService.getPreview(body.registration);
   }
 
+@Get('preview-test')
+async previewTest(@Query('reg') reg: string) {
+  return this.vehicleService.getPreview(reg);
+}
+
 @Post('full')
-@UseGuards(JwtGuard)
-async full(@Req() req: any, @Body() body: any) {
+async full(@Body() body: any) {
 
-  const user = req.user;
+  console.log('🔥 /vehicle/full HIT');
 
-  console.log("🔥 USER FROM TOKEN:", user);
-
-  if (!user || !user.sessionId) {
-    throw new Error("Payment required");
-  }
-
-  const reg = body.registration || body.reg || user.reg;
-
-  return this.vehicleService.getFullReport(reg);
+  return this.vehicleService.getFullReport(
+    body.registration || body.reg,
+    body.sessionId,
+    body.token
+  );
 }
 
   @Post('pdf')
@@ -56,12 +50,18 @@ async full(@Req() req: any, @Body() body: any) {
       }
 
       let data: any;
+      let vehicle: any = {};
+      
 
 if (body.paid) {
-  data = await this.vehicleService.getFull(body.registration);
+  data = await this.vehicleService.getFullReport(
+  body.registration
+);
 } else {
   data = await this.vehicleService.getPreview(body.registration);
 }
+
+vehicle = data.vehicle || {};
 
       if (!data || data.error) {
   console.error("❌ PDF DATA ERROR:", data);
@@ -114,12 +114,12 @@ if (!body.paid) {
 doc.fontSize(14).text('Vehicle Details', { underline: true });
 doc.moveDown(0.5);
 
-doc.text(`Registration: ${data.reg || 'N/A'}`);
-doc.text(`Make: ${data.make || 'N/A'}`);
-doc.text(`Model: ${data.model || 'N/A'}`);
-doc.text(`Fuel: ${data.fuel || 'N/A'}`);
-doc.text(`Colour: ${data.colour || 'N/A'}`);
-doc.text(`Year: ${data.year || 'N/A'}`);
+doc.text(`Registration: ${vehicle.reg || 'N/A'}`);
+doc.text(`Make: ${vehicle.make || 'N/A'}`);
+doc.text(`Model: ${vehicle.model || 'N/A'}`);
+doc.text(`Fuel: ${vehicle.fuel || 'N/A'}`);
+doc.text(`Colour: ${vehicle.colour || 'N/A'}`);
+doc.text(`Year: ${vehicle.year || 'N/A'}`);
 doc.moveDown();
 
 // ===== CHECKS =====
@@ -180,7 +180,7 @@ doc.end();
 }
 
 // ✅ HEALTH CHECK (KEEP THIS)
-@Controller()
+@Controller('health')
 export class HealthController {
   @Get()
   health() {

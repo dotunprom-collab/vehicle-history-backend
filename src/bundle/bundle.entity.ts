@@ -1,30 +1,35 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+} from 'typeorm';
 
 @Entity()
 export class Bundle {
+
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column()
-  userId!: string; // email
-
-  @Column()
-  total!: number;
+  email!: string;
 
   @Column()
   remaining!: number;
 
-  @Column()
-  type!: string;
-
-  @Column({ nullable: true })
-  stripeSessionId!: string;
-
-  @Column({ default: true })
+  @Column({
+    default: true,
+  })
   active!: boolean;
 
-  @Column({ nullable: true })
-  expiresAt!: Date;
+  // =========================
+  // TIER TYPE
+  // =========================
+
+  @Column({
+    default: 'standard',
+  })
+  tier!: string;
 
   @CreateDateColumn()
   createdAt!: Date;

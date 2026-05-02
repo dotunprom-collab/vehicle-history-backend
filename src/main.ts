@@ -7,22 +7,15 @@ import 'reflect-metadata';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
   app.enableCors({
-    origin: [
-      "http://localhost:5501",
-      "http://127.0.0.1:5501"
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  });
-
-  const port = Number(process.env.PORT) || 3001;
-
+  origin: [
+    'https://www.cheapregcheck.com',
+    'https://www.cheapregcheck.com',
+  ],
+});
+  console.log("🚨 VERSION 2 DEPLOY CHECK");
+  const port = Number(process.env.PORT) || 8080;
   await app.listen(port);
-
   console.log("🔥 SERVER IS LISTENING ON:", port);
 }
-
 bootstrap();

@@ -4,186 +4,330 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Bundle } from '../bundle/bundle.entity';
 
-
 @Injectable()
 export class PaymentService {
   private stripe: Stripe | null;
 
-  constructor(
+ constructor(
   @InjectRepository(Bundle)
   private bundleRepo: Repository<Bundle>,
 ) {
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
-  console.log("🔥 STRIPE KEY FULL:", stripeKey);
-  console.log("🔥 STRIPE KEY LENGTH:", stripeKey?.length);
 
-if (!stripeKey) {
-  console.warn("⚠️ STRIPE DISABLED");
-  this.stripe = null;
-  return;
-}
+  const stripeKey =
+    process.env.STRIPE_SECRET_KEY;
 
-this.stripe = new Stripe(stripeKey);
-
-// ✅ NOW it's safe
-console.log("🔥 STRIPE INSTANCE:", !!this.stripe);
+  console.log(
+    stripeKey?.slice(0, 10)
+  );
 
   if (!stripeKey) {
-    console.warn("⚠️ STRIPE DISABLED");
+
     this.stripe = null;
+
     return;
   }
 
-  this.stripe = new Stripe(stripeKey);
+  this.stripe =
+    new Stripe(stripeKey);
 }
 
   // =========================
   // 💳 CREATE CHECKOUT SESSION
   // =========================
-  
-  async createCheckoutSession(
-    reg: string,
-    pkg?: string,
-    bundle?: number
-) {
-  console.log("🚀 FUNCTION HIT: createCheckoutSession");
-  console.log("🔥 CHECKOUT REQUEST:", { reg, pkg, bundle });
+  async createCheckoutSession(body: any) {
+  console.log("🔥 RAW BODY RECEIVED:", body);
+  const reg = body?.registration || body?.reg;
+  const tier = body?.tier || 'standard';
+  const type = body?.type || 'single';
+  const quantity = Number(body?.quantity || 1);
+  const email = body?.email || null;
+  console.log("🔥 NORMALIZED INPUT:", {
+    reg,
+    tier,
+    type,
+    quantity,
+    email,
+  });
 
-  try {
-    if (!this.stripe) {
-      return { error: 'Payments not configured' };
-    }
+  // ─────────────────────────────
+  // VALIDATION
+  // ─────────────────────────────
 
-    let price: number | null = null;
-    let name = '';
-
-    if (pkg === 'basic') {
-      price = 199;
-      name = `Basic Report (${reg})`;
-    }
-
-    if (pkg === 'standard') {
-      price = 499;
-      name = `Standard Report (${reg})`;
-    }
-
-    if (pkg === 'premium') {
-      price = 999;
-      name = `Premium Report (${reg})`;
-    }
-
-    if (bundle === 3) {
-      price = 1499;
-      name = `Bundle 3 Checks`;
-    }
-
-    if (bundle === 5) {
-      price = 1999;
-      name = `Bundle 5 Checks`;
-    }
-
-    if (!price) {
-      throw new Error('Invalid selection');
-    }
-
-    // 🔥 MOVE IT HERE (RIGHT BEFORE STRIPE CALL)
-    const successUrl = `https://vehicle-history-backend-production.up.railway.app/result.html?session_id={CHECKOUT_SESSION_ID}&reg=${reg}`;
-    const cancelUrl = `https://vehicle-history-backend-production.up.railway.app/result.html?reg=${reg}`;
-
-    console.log("🔥🔥🔥 SUCCESS URL BEING SENT TO STRIPE:");
-    console.log(successUrl);
-
-    // ✅ USE VARIABLES HERE
-    const session = await this.stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'payment',
-
-      customer_creation: 'always',
-      billing_address_collection: 'auto',
-
-      line_items: [
-        {
-          price_data: {
-            currency: 'gbp',
-            product_data: { name },
-            unit_amount: price,
-          },
-          quantity: 1,
-        },
-      ],
-
-      success_url: successUrl,   // ✅ FIXED
-      cancel_url: cancelUrl,     // ✅ FIXED
-
-      metadata: {
-        reg: reg || '',
-        pkg: pkg || '',
-        bundle: bundle ? bundle.toString() : '',
-      },
-    });
-
-    return { url: session.url || null };
-
-  } catch (error: any) {
-    console.error("🔥 STRIPE ERROR:", error.message);
-    return { error: 'Payment failed' };
+  if (!reg || typeof reg !== 'string') {
+    throw new Error('Registration required');
   }
+  if (!['standard', 'premium'].includes(tier)) {
+    throw new Error('Invalid tier');
+  }
+  if (!['single', 'bundle', 'upgrade'].includes(type)) {
+    throw new Error('Invalid type');
+  }
+  if (!this.stripe) {
+    throw new Error('Stripe not initialized');
+  }
+
+  // ─────────────────────────────
+  // PRODUCT MATRIX
+  // ─────────────────────────────
+
+  let price = 199;
+  let name = 'Standard Check';
+
+  // =========================
+  // STANDARD SINGLE
+  // =========================
+
+  if (tier === 'standard' && type === 'single') {
+
+    price = 599;
+
+    name = 'Standard Check';
+  }
+
+  // =========================
+  // PREMIUM SINGLE
+  // =========================
+
+  if (tier === 'premium' && type === 'single') {
+
+    price = 899;
+
+    name = 'Premium Check';
+  }
+
+  // =========================
+  // STANDARD BUNDLES
+  // =========================
+
+  if (tier === 'standard' && type === 'bundle') {
+
+    if (quantity === 3) {
+
+      price = 1499;
+
+      name = '3 Standard Reports';
+    }
+
+    else if (quantity === 5) {
+
+      price = 2299;
+
+      name = '5 Standard Reports';
+    }
+
+    else {
+
+      throw new Error('Invalid standard bundle quantity');
+    }
+  }
+
+  // =========================
+  // PREMIUM BUNDLES
+  // =========================
+
+  if (tier === 'premium' && type === 'bundle') {
+
+    if (quantity === 3) {
+
+      price = 1999;
+
+      name = '3 Premium Reports';
+    }
+
+    else if (quantity === 5) {
+
+      price = 2999;
+
+      name = '5 Premium Reports';
+    }
+
+    else {
+
+      throw new Error('Invalid premium bundle quantity');
+    }
+  }
+
+// =========================
+// PREMIUM UPGRADE
+// Standard → Premium top-up
+// =========================
+
+if (
+  type === 'upgrade'
+) {
+
+  if (
+    tier !== 'premium'
+  ) {
+
+    throw new Error(
+      'Upgrade must target premium tier'
+    );
+  }
+
+  if (
+    quantity !== 1
+  ) {
+
+    throw new Error(
+      'Upgrade quantity must be 1'
+    );
+  }
+
+  price = 300;
+
+  name =
+    'Premium Upgrade';
 }
 
-  // =========================
-  // ✅ GET SESSION
-  // =========================
-  async getSession(sessionId: string) {
+// =========================
+// SINGLE REPORT
+// =========================
+
+else if (
+  type === 'single'
+) {
+
+  price =
+    tier === 'premium'
+      ? 999
+      : 599;
+
+  name =
+    tier === 'premium'
+      ? 'Premium Vehicle Check'
+      : 'Standard Vehicle Check';
+}
+
+// =========================
+// BUNDLE
+// =========================
+
+else if (
+  type === 'bundle'
+) {
+
+  price = 1999;
+
+  name =
+    'Vehicle Check Bundle';
+}
+
+else {
+
+  throw new Error(
+    'Invalid type'
+  );
+}
+
+// ─────────────────────────────
+// METADATA
+// ─────────────────────────────
+
+const metadata:
+  Record<string, string> = {
+
+  reg: String(reg),
+  tier,
+  type,
+  quantity:
+    String(quantity),
+};
+
+if (
+  type === 'upgrade'
+) {
+  metadata.upgradeFrom =
+    'standard';
+}
+
+console.log(
+  '🔥 STRIPE METADATA:',
+  metadata
+);
+
+  // ─────────────────────────────
+  // CREATE STRIPE SESSION
+  // ─────────────────────────────
+
+  const session = await this.stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    mode: 'payment',
+    line_items: [
+      {
+        price_data: {
+          currency: 'gbp',
+          product_data: {
+            name,
+          },
+          unit_amount: price,
+        },
+        quantity: 1,
+      },
+    ],
+
+    success_url:
+      `${process.env.FRONTEND_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url:
+      `${process.env.FRONTEND_URL}/cancel.html`,
+    customer_email:
+      typeof email === 'string'
+        ? email
+        : undefined,
+    metadata,
+  });
+
+  return session;
+}  async getSession(sessionId: string) {
     try {
       if (!this.stripe) {
         return { error: 'Payments not configured' };
       }
-
       const session = await this.stripe.checkout.sessions.retrieve(sessionId);
-
-      // 🔥 CREATE BUNDLE IF PAID
-      if (session.payment_status === 'paid' && session.metadata?.bundle) {
-        await this.createBundleFromPayment(session);
-      }
-
       return session;
-
     } catch (error: any) {
-      console.error("🔥 STRIPE SESSION ERROR:", error.message);
+      console.error("🔥 SESSION ERROR:", error.message);
       return { error: 'Failed to retrieve session' };
     }
   }
 
   // =========================
-  // 🎟️ CREATE BUNDLE (SAFE)
+  // 🎟️ CREATE / TOP-UP BUNDLE
   // =========================
-  async createBundleFromPayment(session: any) {
-    const bundle = session.metadata?.bundle;
-    if (!bundle) return;
-
-    const total = Number(bundle);
-    const userId = session.customer_details?.email || 'guest';
-
-    // 🚫 PREVENT DUPLICATES (ONLY NEED SESSION ID)
-    const existing = await this.bundleRepo.findOne({
-      where: {
-        stripeSessionId: session.id,
-      },
-    });
-
-    if (existing) {
-      console.log("⚠️ Bundle already exists");
-      return;
-    }
-
-    await this.bundleRepo.save({
-      userId,
-      total,
-      remaining: total,
-      type: `bundle_${bundle}`,
-      stripeSessionId: session.id,
-    });
-
-    console.log("✅ Bundle created");
+  async createBundle(
+  email: string,
+  quantity: number,
+  tier: string,
+) {
+  if (!email || quantity <= 0) {
+    return;
   }
+  const existing = await this.bundleRepo.findOne({
+    where: {
+      email,
+      active: true,
+    },
+    order: {
+      createdAt: 'DESC',
+    },
+  });
+
+  if (existing) {
+    existing.remaining += quantity;
+    existing.active = true;
+    existing.tier = tier;
+    await this.bundleRepo.save(existing);
+    console.log("✅ Bundle topped up");
+    return;
+  }
+
+  const bundle: any = {
+    email,
+    remaining: quantity,
+    active: true,
+    tier,
+  };
+  await this.bundleRepo.save(bundle);
+  console.log("✅ New bundle created");
+}
 }
