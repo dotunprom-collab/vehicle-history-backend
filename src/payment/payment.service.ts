@@ -353,6 +353,12 @@ export class PaymentService {
     private bundleRepo: Repository<Bundle>,
   ) {
 
+    console.log(
+  '🔥 ENV CHECK:',
+  Object.keys(process.env)
+    .includes('STRIPE_SECRET_LIVE')
+);
+
     const stripeKey =
       process.env.STRIPE_SECRET_LIVE;
 
