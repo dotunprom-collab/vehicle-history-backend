@@ -360,7 +360,12 @@ console.log(
 );
 
 const stripeKey =
-  process.env.LIVE_STRIPE_KEY_2026;
+  process.env.PAYMENTS_LIVE_KEY;
+
+  console.log(
+  '🔥 STRIPE PREFIX:',
+  stripeKey?.slice(0, 8)
+);
 
     console.log(
       '🔥 STRIPE MODE:',
