@@ -353,14 +353,14 @@ export class PaymentService {
     private bundleRepo: Repository<Bundle>,
   ) {
 
-    console.log(
+console.log(
   '🔥 ENV CHECK:',
   Object.keys(process.env)
-    .includes('STRIPE_SECRET_LIVE')
+    .includes('LIVE_STRIPE_KEY_2026')
 );
 
-    const stripeKey =
-      process.env.STRIPE_SECRET_LIVE;
+const stripeKey =
+  process.env.LIVE_STRIPE_KEY_2026;
 
     console.log(
       '🔥 STRIPE MODE:',
@@ -372,7 +372,7 @@ export class PaymentService {
     if (!stripeKey) {
 
       console.error(
-        '❌ STRIPE_SECRET_LIVE missing'
+        '❌ LIVE_STRIPE_KEY_2026 missing'
       );
 
       this.stripe = null;
