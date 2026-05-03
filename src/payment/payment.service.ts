@@ -362,35 +362,35 @@ console.log(
 const stripeKey =
   process.env.PAYMENTS_LIVE_KEY;
 
-  console.log(
+console.log(
   '🔥 STRIPE PREFIX:',
   stripeKey?.slice(0, 8)
 );
 
-    console.log(
-      '🔥 STRIPE MODE:',
-      stripeKey?.startsWith('sk_live_')
-        ? 'LIVE'
-        : 'TEST'
-    );
+console.log(
+  '🔥 STRIPE MODE:',
+  stripeKey?.startsWith('sk_live_')
+    ? 'LIVE'
+    : 'TEST'
+);
 
-    if (!stripeKey) {
+if (!stripeKey) {
 
-      console.error(
-        '❌ LIVE_STRIPE_KEY_2026 missing'
-      );
+  console.error(
+    '❌ PAYMENTS_LIVE_KEY missing'
+  );
 
-      this.stripe = null;
+  this.stripe = null;
 
-      return;
-    }
+  return;
+}
 
-    this.stripe = new Stripe(
-      stripeKey,
-      {
-        apiVersion: '2026-02-25.clover',
-      }
-    );
+this.stripe = new Stripe(
+  stripeKey,
+  {
+    apiVersion: '2026-02-25.clover',
+  }
+);
   }
 
   // =========================
