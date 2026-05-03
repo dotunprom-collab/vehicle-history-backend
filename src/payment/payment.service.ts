@@ -15,15 +15,6 @@ export class PaymentService {
 
   const stripeKey =
     process.env.STRIPE_SECRET_KEY;
-    console.log(
-  '🔥 RAW STRIPE KEY:',
-  process.env.STRIPE_SECRET_KEY
-
-);
-console.log(
-  '🔥 RAW FRONTEND URL:',
-  process.env.FRONTEND_URL
-);
 
   if (!stripeKey) {
 
@@ -251,26 +242,7 @@ console.log(
   metadata
 );
 
-console.log(
-  '🔥 FRONTEND_URL:',
-  process.env.FRONTEND_URL
-);
 
-console.log(
-  '🔥 ENV KEYS:',
-  Object.keys(process.env)
-    .filter(k => k.includes('FRONT'))
-);
-
-console.log(
-  '🔥 SUCCESS URL:',
-  `${process.env.FRONTEND_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`
-);
-
-console.log(
-  '🔥 CANCEL URL:',
-  `${process.env.FRONTEND_URL}/cancel.html`
-);
   // ─────────────────────────────
   // CREATE STRIPE SESSION
   // ─────────────────────────────
