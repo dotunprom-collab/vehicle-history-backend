@@ -14,7 +14,14 @@ export class PaymentService {
 ) {
 
   const stripeKey =
-    process.env.STRIPE_SECRET_KEY;
+  process.env.STRIPE_SECRET_KEY_NEW;
+
+    console.log(
+  '🔥 STRIPE MODE:',
+  stripeKey?.startsWith('sk_live_')
+    ? 'LIVE'
+    : 'TEST'
+);
 
   if (!stripeKey) {
 
