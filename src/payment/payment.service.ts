@@ -15,6 +15,15 @@ export class PaymentService {
 
   const stripeKey =
     process.env.STRIPE_SECRET_KEY;
+    console.log(
+  '🔥 RAW STRIPE KEY:',
+  process.env.STRIPE_SECRET_KEY
+
+);
+console.log(
+  '🔥 RAW FRONTEND URL:',
+  process.env.FRONTEND_URL
+);
 
   if (!stripeKey) {
 
@@ -248,6 +257,12 @@ console.log(
 );
 
 console.log(
+  '🔥 ENV KEYS:',
+  Object.keys(process.env)
+    .filter(k => k.includes('FRONT'))
+);
+
+console.log(
   '🔥 SUCCESS URL:',
   `${process.env.FRONTEND_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`
 );
@@ -277,9 +292,11 @@ console.log(
     ],
 
     success_url:
-      `${process.env.FRONTEND_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url:
-      `${process.env.FRONTEND_URL}/cancel.html`,
+  'https://www.cheapregcheck.com/success.html?session_id={CHECKOUT_SESSION_ID}',
+
+cancel_url:
+  'https://www.cheapregcheck.com/cancel.html',
+  
     customer_email:
       typeof email === 'string'
         ? email
