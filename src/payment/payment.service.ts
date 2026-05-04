@@ -1,343 +1,3 @@
-// import { Injectable } from '@nestjs/common';
-// import Stripe from 'stripe';
-// import { InjectRepository } from '@nestjs/typeorm';
-// import { Repository } from 'typeorm';
-// import { Bundle } from '../bundle/bundle.entity';
-
-// @Injectable()
-// export class PaymentService {
-//   private stripe: Stripe | null;
-
-//  constructor(
-//   @InjectRepository(Bundle)
-//   private bundleRepo: Repository<Bundle>,
-// ) {
-
-//   const stripeKey =
-//   process.env.STRIPE_SECRET_KEY_NEW;
-
-//     console.log(
-//   '🔥 STRIPE MODE:',
-//   stripeKey?.startsWith('sk_live_')
-//     ? 'LIVE'
-//     : 'TEST'
-// );
-
-//   if (!stripeKey) {
-
-//     this.stripe = null;
-
-//     return;
-//   }
-
-//   this.stripe =
-//     new Stripe(stripeKey);
-// }
-
-//   // =========================
-//   // 💳 CREATE CHECKOUT SESSION
-//   // =========================
-//   async createCheckoutSession(body: any) {
-//   console.log("🔥 RAW BODY RECEIVED:", body);
-//   const reg = body?.registration || body?.reg;
-//   const tier = body?.tier || 'standard';
-//   const type = body?.type || 'single';
-//   const quantity = Number(body?.quantity || 1);
-//   const email = body?.email || null;
-//   console.log("🔥 NORMALIZED INPUT:", {
-//     reg,
-//     tier,
-//     type,
-//     quantity,
-//     email,
-//   });
-
-//   // ─────────────────────────────
-//   // VALIDATION
-//   // ─────────────────────────────
-
-//   if (!reg || typeof reg !== 'string') {
-//     throw new Error('Registration required');
-//   }
-//   if (!['standard', 'premium'].includes(tier)) {
-//     throw new Error('Invalid tier');
-//   }
-//   if (!['single', 'bundle', 'upgrade'].includes(type)) {
-//     throw new Error('Invalid type');
-//   }
-//   if (!this.stripe) {
-//     throw new Error('Stripe not initialized');
-//   }
-
-//   // ─────────────────────────────
-//   // PRODUCT MATRIX
-//   // ─────────────────────────────
-
-//   let price = 199;
-//   let name = 'Standard Check';
-
-//   // =========================
-//   // STANDARD SINGLE
-//   // =========================
-
-//   if (tier === 'standard' && type === 'single') {
-
-//     price = 599;
-
-//     name = 'Standard Check';
-//   }
-
-//   // =========================
-//   // PREMIUM SINGLE
-//   // =========================
-
-//   if (tier === 'premium' && type === 'single') {
-
-//     price = 899;
-
-//     name = 'Premium Check';
-//   }
-
-//   // =========================
-//   // STANDARD BUNDLES
-//   // =========================
-
-//   if (tier === 'standard' && type === 'bundle') {
-
-//     if (quantity === 3) {
-
-//       price = 1499;
-
-//       name = '3 Standard Reports';
-//     }
-
-//     else if (quantity === 5) {
-
-//       price = 2299;
-
-//       name = '5 Standard Reports';
-//     }
-
-//     else {
-
-//       throw new Error('Invalid standard bundle quantity');
-//     }
-//   }
-
-//   // =========================
-//   // PREMIUM BUNDLES
-//   // =========================
-
-//   if (tier === 'premium' && type === 'bundle') {
-
-//     if (quantity === 3) {
-
-//       price = 1999;
-
-//       name = '3 Premium Reports';
-//     }
-
-//     else if (quantity === 5) {
-
-//       price = 2999;
-
-//       name = '5 Premium Reports';
-//     }
-
-//     else {
-
-//       throw new Error('Invalid premium bundle quantity');
-//     }
-//   }
-
-// // =========================
-// // PREMIUM UPGRADE
-// // Standard → Premium top-up
-// // =========================
-
-// if (
-//   type === 'upgrade'
-// ) {
-
-//   if (
-//     tier !== 'premium'
-//   ) {
-
-//     throw new Error(
-//       'Upgrade must target premium tier'
-//     );
-//   }
-
-//   if (
-//     quantity !== 1
-//   ) {
-
-//     throw new Error(
-//       'Upgrade quantity must be 1'
-//     );
-//   }
-
-//   price = 300;
-
-//   name =
-//     'Premium Upgrade';
-// }
-
-// // =========================
-// // SINGLE REPORT
-// // =========================
-
-// else if (
-//   type === 'single'
-// ) {
-
-//   price =
-//     tier === 'premium'
-//       ? 999
-//       : 599;
-
-//   name =
-//     tier === 'premium'
-//       ? 'Premium Vehicle Check'
-//       : 'Standard Vehicle Check';
-// }
-
-// // =========================
-// // BUNDLE
-// // =========================
-
-// else if (
-//   type === 'bundle'
-// ) {
-
-//   price = 1999;
-
-//   name =
-//     'Vehicle Check Bundle';
-// }
-
-// else {
-
-//   throw new Error(
-//     'Invalid type'
-//   );
-// }
-
-// // ─────────────────────────────
-// // METADATA
-// // ─────────────────────────────
-
-// const metadata:
-//   Record<string, string> = {
-
-//   reg: String(reg),
-//   tier,
-//   type,
-//   quantity:
-//     String(quantity),
-// };
-
-// if (
-//   type === 'upgrade'
-// ) {
-//   metadata.upgradeFrom =
-//     'standard';
-// }
-
-// console.log(
-//   '🔥 STRIPE METADATA:',
-//   metadata
-// );
-
-
-//   // ─────────────────────────────
-//   // CREATE STRIPE SESSION
-//   // ─────────────────────────────
-
-//   const session = await this.stripe.checkout.sessions.create({
-//     payment_method_types: ['card'],
-//     mode: 'payment',
-//     line_items: [
-//       {
-//         price_data: {
-//           currency: 'gbp',
-//           product_data: {
-//             name,
-//           },
-//           unit_amount: price,
-//         },
-//         quantity: 1,
-//       },
-//     ],
-
-//     success_url:
-//   'https://www.cheapregcheck.com/success.html?session_id={CHECKOUT_SESSION_ID}',
-
-// cancel_url:
-//   'https://www.cheapregcheck.com/cancel.html',
-  
-//     customer_email:
-//       typeof email === 'string'
-//         ? email
-//         : undefined,
-//     metadata,
-//   });
-
-//   return session;
-// }  async getSession(sessionId: string) {
-//     try {
-//       if (!this.stripe) {
-//         return { error: 'Payments not configured' };
-//       }
-//       const session = await this.stripe.checkout.sessions.retrieve(sessionId);
-//       return session;
-//     } catch (error: any) {
-//       console.error("🔥 SESSION ERROR:", error.message);
-//       return { error: 'Failed to retrieve session' };
-//     }
-//   }
-
-//   // =========================
-//   // 🎟️ CREATE / TOP-UP BUNDLE
-//   // =========================
-//   async createBundle(
-//   email: string,
-//   quantity: number,
-//   tier: string,
-// ) {
-//   if (!email || quantity <= 0) {
-//     return;
-//   }
-//   const existing = await this.bundleRepo.findOne({
-//     where: {
-//       email,
-//       active: true,
-//     },
-//     order: {
-//       createdAt: 'DESC',
-//     },
-//   });
-
-//   if (existing) {
-//     existing.remaining += quantity;
-//     existing.active = true;
-//     existing.tier = tier;
-//     await this.bundleRepo.save(existing);
-//     console.log("✅ Bundle topped up");
-//     return;
-//   }
-
-//   const bundle: any = {
-//     email,
-//     remaining: quantity,
-//     active: true,
-//     tier,
-//   };
-//   await this.bundleRepo.save(bundle);
-//   console.log("✅ New bundle created");
-// }
-// }
-
 import { Injectable } from '@nestjs/common';
 import Stripe from 'stripe';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -346,6 +6,7 @@ import { Bundle } from '../bundle/bundle.entity';
 
 @Injectable()
 export class PaymentService {
+
   private stripe: Stripe | null;
 
   constructor(
@@ -353,44 +14,26 @@ export class PaymentService {
     private bundleRepo: Repository<Bundle>,
   ) {
 
-console.log(
-  '🔥 ENV CHECK:',
-  Object.keys(process.env)
-    .includes('LIVE_STRIPE_KEY_2026')
-);
+    const stripeKey =
+      process.env.STRIPE_SECRET_KEY;
 
-const stripeKey =
-  process.env.PAYMENTS_LIVE_KEY;
+    if (!stripeKey) {
 
-console.log(
-  '🔥 STRIPE PREFIX:',
-  stripeKey?.slice(0, 8)
-);
+      console.error(
+        '❌ STRIPE_SECRET_KEY missing'
+      );
 
-console.log(
-  '🔥 STRIPE MODE:',
-  stripeKey?.startsWith('sk_live_')
-    ? 'LIVE'
-    : 'TEST'
-);
+      this.stripe = null;
 
-if (!stripeKey) {
+      return;
+    }
 
-  console.error(
-    '❌ PAYMENTS_LIVE_KEY missing'
-  );
-
-  this.stripe = null;
-
-  return;
-}
-
-this.stripe = new Stripe(
-  stripeKey,
-  {
-    apiVersion: '2026-02-25.clover',
-  }
-);
+    this.stripe = new Stripe(
+      stripeKey,
+      {
+        apiVersion: '2026-02-25.clover',
+      }
+    );
   }
 
   // =========================
@@ -398,11 +41,6 @@ this.stripe = new Stripe(
   // =========================
 
   async createCheckoutSession(body: any) {
-
-    console.log(
-      '🔥 RAW BODY RECEIVED:',
-      body
-    );
 
     const reg =
       body?.registration ||
@@ -421,17 +59,6 @@ this.stripe = new Stripe(
 
     const email =
       body?.email || null;
-
-    console.log(
-      '🔥 NORMALIZED INPUT:',
-      {
-        reg,
-        tier,
-        type,
-        quantity,
-        email,
-      }
-    );
 
     // =========================
     // VALIDATION
@@ -477,7 +104,7 @@ this.stripe = new Stripe(
     // PRICING
     // =========================
 
-    let price = 599;
+    let price = 199;
 
     let name =
       'Standard Vehicle Check';
@@ -574,11 +201,6 @@ this.stripe = new Stripe(
         'standard';
     }
 
-    console.log(
-      '🔥 STRIPE METADATA:',
-      metadata
-    );
-
     // =========================
     // CREATE SESSION
     // =========================
@@ -604,20 +226,15 @@ this.stripe = new Stripe(
                 product_data: {
                   name,
                 },
-
                 unit_amount:
                   price,
               },
-
               quantity: 1,
             },
           ],
 
-          success_url:
-            'https://www.cheapregcheck.com/success.html?session_id={CHECKOUT_SESSION_ID}',
-
-          cancel_url:
-            'https://www.cheapregcheck.com/cancel.html',
+          success_url:'https://www.cheapregcheck.com/success.html?session_id={CHECKOUT_SESSION_ID}',
+          cancel_url:'https://www.cheapregcheck.com/cancel.html',
 
           customer_email:
             typeof email === 'string'
@@ -626,9 +243,117 @@ this.stripe = new Stripe(
 
           metadata,
         });
-
     return session;
   }
+
+  // =========================
+  // 🔔 STRIPE WEBHOOK
+  // =========================
+
+  async handleWebhook(
+    req: any,
+    signature: string,
+  ) {
+
+    if (!this.stripe) {
+      throw new Error(
+        'Stripe not initialized'
+      );
+    }
+
+    const webhookSecret =
+      process.env
+        .STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      throw new Error(
+        'Missing webhook secret'
+      );
+    }
+
+    let event: Stripe.Event;
+
+    try {
+
+      event =
+        this.stripe.webhooks
+          .constructEvent(
+            req.rawBody,
+            signature,
+            webhookSecret,
+          );
+
+    } catch (err: any) {
+
+      console.error(
+        '❌ Webhook signature failed:',
+        err.message,
+      );
+
+      throw new Error(
+        'Invalid webhook signature'
+      );
+    }
+
+    switch (event.type) {
+
+      case
+        'checkout.session.completed':
+
+        const session =
+          event.data.object as
+          Stripe.Checkout.Session;
+
+        console.log(
+          '✅ PAYMENT SUCCESS:',
+          session.id,
+        );
+
+        console.log(
+          '✅ METADATA:',
+          session.metadata,
+        );
+
+        if (
+          session.metadata?.type ===
+          'bundle'
+        ) {
+
+          const email =
+            session.customer_details
+              ?.email ||
+            session.customer_email ||
+            'guest';
+
+          await this.createBundle(
+
+            email,
+
+            Number(
+              session.metadata
+                .quantity || 1
+            ),
+            session.metadata
+              .tier ||
+              'standard',
+          );
+        }
+        break;
+      default:
+
+        console.log(
+          `Unhandled event: ${event.type}`
+        );
+    }
+
+    return {
+      received: true,
+    };
+  }
+
+  // =========================
+  // 📦 GET SESSION
+  // =========================
 
   async getSession(
     sessionId: string
@@ -700,35 +425,25 @@ this.stripe = new Stripe(
       });
 
     if (existing) {
-
       existing.remaining +=
         quantity;
-
       existing.active =
         true;
-
       existing.tier =
         tier;
-
       await this.bundleRepo
         .save(existing);
-
       console.log(
         '✅ Bundle topped up'
       );
-
       return;
     }
 
     const bundle: any = {
-
       email,
-
       remaining:
         quantity,
-
       active: true,
-
       tier,
     };
 

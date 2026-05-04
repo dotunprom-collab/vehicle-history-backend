@@ -516,13 +516,10 @@ async getFullReport(
 
       userId:
         email || 'guest',
-
-      data: report,
-
-      status: 'paid',
-
-      pkg: accessTier,
-    });
+        data: report,
+        status: 'paid',
+        pkg: accessTier,
+      });
 
     console.log(
       '🔥 RETURNING REPORT — tier:',
@@ -540,23 +537,17 @@ async getFullReport(
 
     const accessToken =
       this.authService.generateToken({
-
         reg,
-
         tier: accessTier,
-
         type: 'report_access',
       });
 
     return {
-
       ...report,
-
       accessToken,
     };
 
   } catch (err: any) {
-
     console.error(
       '🔥 FULL REPORT ERROR:',
       err.message
@@ -569,7 +560,6 @@ async getFullReport(
 }
 private async getVDGData(
   reg: string
-
 ) {
 
   const apiKey =
@@ -578,7 +568,6 @@ private async getVDGData(
     throw new Error(
       'VDG_API_KEY missing'
     );
-
   }
 
   const url =
@@ -595,9 +584,7 @@ private async getVDGData(
   console.log(
     '🔥 VDG RESPONSE OK'
   );
-
   return response.data;
-
 }
 
 // =========================

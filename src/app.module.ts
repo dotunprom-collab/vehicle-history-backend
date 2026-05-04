@@ -12,24 +12,51 @@ import { join } from 'path';
 import { RiskService } from './vehicle/risk.service';
 import { ConsumedSession } from './payment/consumed-session.entity';
 
+import {
+  ThrottlerModule,
+} from '@nestjs/throttler';
+
 @Module({
+
   imports: [
-    // ✅ SERVE FRONTEND (FIXED)
+
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
+
+    // ✅ SERVE FRONTEND
     ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'public/frontend'),
+      rootPath: join(
+        process.cwd(),
+        'public/frontend'
+      ),
       serveRoot: '/',
-      exclude: ['/api*'], // 🔥 prevents API conflicts
+      exclude: ['/api*'],
     }),
 
     // ✅ DATABASE
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'db.sqlite',
-      entities: [Report,Bundle,ConsumedSession],
+
+      entities: [
+        Report,
+        Bundle,
+        ConsumedSession,
+      ],
+
       synchronize: true,
     }),
 
-    TypeOrmModule.forFeature([Report,Bundle,ConsumedSession]),
+    TypeOrmModule.forFeature([
+      Report,
+      Bundle,
+      ConsumedSession,
+    ]),
+
     AuthModule,
   ],
 
@@ -45,4 +72,5 @@ import { ConsumedSession } from './payment/consumed-session.entity';
     RiskService,
   ],
 })
+
 export class AppModule {}

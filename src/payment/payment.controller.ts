@@ -1,5 +1,16 @@
-import { Controller, Post, Body, Get, Query } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Query,
+  Headers,
+  Req,
+  HttpCode,
+} from '@nestjs/common';
+import { Request } from 'express';
 import { PaymentService } from './payment.service';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('payment')
 export class PaymentController {
@@ -8,11 +19,38 @@ export class PaymentController {
   // =========================
   // 💳 CREATE CHECKOUT SESSION
   // =========================
-  @Post('checkout')
-  async checkout(@Body() body: any) {
-    const session = await this.paymentService.createCheckoutSession(body);
-    return { url: session.url };
-  }
+
+
+@Throttle({
+  default: {
+    limit: 5,
+    ttl: 60000,
+  },
+})
+@Post('checkout')
+async checkout(@Body() body: any) {
+  const session =
+    await this.paymentService
+      .createCheckoutSession(body);
+
+  return {
+    url: session.url,
+  };
+}
+
+@Post('webhook')
+@HttpCode(200)
+async webhook(
+  @Req() req: Request,
+  @Headers('stripe-signature')
+  signature: string,
+) {
+
+  return this.paymentService.handleWebhook(
+    req,
+    signature,
+  );
+}
 
   // =========================
   // ✅ STRIPE SUCCESS (NO JWT)

@@ -3,20 +3,19 @@ import { VehicleService } from './vehicle.service';
 import { Response } from 'express';
 import PDFDocument from 'pdfkit';
 import { Query } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('vehicle')
 export class VehicleController {
   constructor(private readonly vehicleService: VehicleService) {}
   
+@Throttle({
+  default: {
+    limit: 10,
+    ttl: 60000,
+  },
 
-//   @Get('image')
-//   getImage(
-//     @Query('make') make: string,
-//     @Query('model') model?: string
-// ) {
-//   return this.vehicleService.getVehicleImage(make, model);
-// }
-
+})
   @Post('preview')
   async preview(@Body() body: { registration: string }) {
     return this.vehicleService.getPreview(body.registration);
@@ -183,7 +182,11 @@ doc.end();
 @Controller('health')
 export class HealthController {
   @Get()
-  health() {
-    return { status: 'ok' };
+health() {
+  return {
+    status: 'ok',
+    timestamp:
+      new Date().toISOString(),
+  };
   }
 }
