@@ -272,9 +272,7 @@ export class PaymentService {
     }
 
     let event: Stripe.Event;
-
     try {
-
       event =
         this.stripe.webhooks
           .constructEvent(
@@ -282,7 +280,6 @@ export class PaymentService {
             signature,
             webhookSecret,
           );
-
     } catch (err: any) {
 
       console.error(
@@ -299,7 +296,6 @@ export class PaymentService {
 
       case
         'checkout.session.completed':
-
         const session =
           event.data.object as
           Stripe.Checkout.Session;

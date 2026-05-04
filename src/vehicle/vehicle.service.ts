@@ -112,19 +112,12 @@ export class VehicleService {
   }
 }
 
-private async fetchRccData(
-  reg: string
-) {
+private async fetchRccData(reg: string) {
 
-  console.log(
-    '🔥 RCC FETCH:',
-    reg
-  );
+  console.log('🔥 RCC FETCH:', reg);
 
-  const apiKey =
-    process.env.RAPID_API_KEY;
-  const domain =
-    process.env.RAPID_API_DOMAIN;
+  const apiKey = process.env.RAPID_API_KEY;
+  const domain = process.env.RAPID_API_DOMAIN;
 
   const url =
     `https://www.rapidcarcheck.co.uk/api/` +
@@ -132,16 +125,24 @@ private async fetchRccData(
     `&domain=${encodeURIComponent(domain || '')}` +
     `&plate=${encodeURIComponent(reg)}`;
 
-  const response =
-    await axios.get(url);
-  const data =
-    response.data;
+  const response = await axios.get(url);
+  const data = response.data;
+
+  console.log(
+    '🔥 RCC RAW FULL:',
+    JSON.stringify(data, null, 2)
+  );
+
   const ivcm =
-    data?.Results
-      ?.InitialVehicleCheckModel;
+    data?.Results?.InitialVehicleCheckModel;
+
   const vehicle =
-    ivcm
-      ?.BasicVehicleDetailsModel;
+    ivcm?.BasicVehicleDetailsModel;
+
+  console.log(
+    '🔥 RCC VEHICLE:',
+    JSON.stringify(vehicle, null, 2)
+  );
 
   return {
     data,
@@ -414,12 +415,15 @@ async getFullReport(
     --------------------------------
     RCC STANDARD
     */
-    else if (
-      accessTier === 'standard'
-    ) {
-      report =
-        await this.getRccStandard(reg);
-    }
+    else if (accessTier === 'standard') {
+
+  report = await this.getRccStandard(reg);
+
+  console.log(
+    '🔥 STANDARD REPORT:',
+    JSON.stringify(report, null, 2)
+  );
+}
 
     /*
     PREMIUM
@@ -428,7 +432,7 @@ async getFullReport(
     */
 
     else if (
-  accessTier === 'premium'
+accessTier === 'premium'
 ) {
 
   // get standard structure
