@@ -104,7 +104,7 @@ export class PaymentService {
     // PRICING
     // =========================
 
-    let price = 199;
+    let price = 599;
 
     let name =
       'Standard Vehicle Check';
@@ -133,8 +133,8 @@ export class PaymentService {
 
       price =
         tier === 'premium'
-          ? 999
-          : 599;
+          ? 899
+          : 199;
 
       name =
         tier === 'premium'
