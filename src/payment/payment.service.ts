@@ -134,7 +134,7 @@ export class PaymentService {
       price =
         tier === 'premium'
           ? 899
-          : 199;
+          : 0.99;
 
       name =
         tier === 'premium'
