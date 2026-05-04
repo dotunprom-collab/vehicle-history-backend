@@ -116,6 +116,8 @@ private async fetchRccData(reg: string) {
 
   console.log('🔥 RCC FETCH:', reg);
 
+  console.log('🔥 DOMAIN USED:', process.env.RAPID_API_DOMAIN);
+  
   const apiKey = process.env.RAPID_API_KEY;
   const domain = process.env.RAPID_API_DOMAIN;
 
