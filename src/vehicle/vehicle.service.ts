@@ -164,14 +164,11 @@ private async fetchRccData(reg: string) {
 async getRccStandard(
   reg: string
 ) {
-
   try {
-
     const {
       vehicle
     } =
       await this.fetchRccData(reg);
-
     return {
       tier: 'standard',
       vehicle: {
@@ -195,7 +192,6 @@ async getRccStandard(
         motStatus:
           vehicle?.MotStatusDescription || null,
       },
-
       motHistory:
         vehicle
           ?.MotResultsSummary
@@ -213,16 +209,13 @@ async getRccStandard(
     error: err.message,
     response: err.response?.data || null,
   });
-
   throw new Error(
     'Failed to load standard report'
   );
  }
 }
 private async consumeBundle(email: string): Promise<boolean> {
-
   try {
-
     const bundle = await this.bundleRepo.findOne({
       where: {
         email,
@@ -232,59 +225,42 @@ private async consumeBundle(email: string): Promise<boolean> {
         createdAt: 'DESC',
       },
     });
-
     if (!bundle) {
-
       logger.info({
         event: 'BUNDLE_NOT_FOUND',
         email,
       });
-
       return false;
     }
-
     if (bundle.remaining <= 0) {
-
       bundle.active = false;
-
       await this.bundleRepo.save(bundle);
-
       logger.warn({
         event: 'BUNDLE_EMPTY',
         email,
       });
-
       return false;
     }
-
     bundle.remaining -= 1;
-
     if (bundle.remaining <= 0) {
       bundle.active = false;
     }
-
     await this.bundleRepo.save(bundle);
-
     logger.info({
       event: 'BUNDLE_CONSUMED',
       email,
       remaining: bundle.remaining,
     });
-
     return true;
-
   } catch (err: any) {
-
     logger.error({
       event: 'BUNDLE_CONSUME_ERROR',
       email,
       error: err.message,
     });
-
     return false; // ❗ do NOT throw here (explained below)
   }
 }
-
   // =========================
   // 🔒 FULL REPORT (PAID / BUNDLE)
   // =========================
@@ -304,19 +280,14 @@ async getFullReport(
     if (token) {
       const decoded: any =
         this.authService.verifyToken(token);
-
       console.log('🔥 TOKEN DECODED:', decoded);
-
       if (!decoded) {
         throw new Error('Invalid token');
       }
-
       if (decoded.type !== 'report_access') {
         throw new Error('Invalid access type');
       }
-
       const tokenReg = decoded.reg;
-
       if (
         tokenReg &&
         tokenReg.toUpperCase().trim() !==
@@ -326,7 +297,6 @@ async getFullReport(
           'Token registration mismatch'
         );
       }
-
       isPaid = true;
       accessTier =
         decoded.tier || 'standard';
@@ -340,14 +310,17 @@ async getFullReport(
         await this.paymentService.getSession(
           sessionId
         );
-
       if (!session || session.error) {
         throw new Error('Invalid session');
       }
-
       if (session.payment_status !== 'paid') {
         throw new Error('Payment required');
       }
+      // ✅ SET EMAIL FIRST (CRITICAL FIX)
+      email =
+        session.customer_details?.email ||
+        session.customer_email ||
+        null;
 
       logger.info({
         event: 'ACCESS_GRANTED',
@@ -355,12 +328,6 @@ async getFullReport(
         email,
         tier: accessTier,
       });
-
-      // ✅ SET EMAIL FIRST (CRITICAL FIX)
-      email =
-        session.customer_details?.email ||
-        session.customer_email ||
-        null;
 
       accessTier =
         session.metadata?.tier ||
@@ -405,7 +372,6 @@ async getFullReport(
           email: email || 'guest',
           reg,
         });
-        
       }
     }
 
@@ -414,10 +380,17 @@ async getFullReport(
     // =========================
     let hasBundle = false;
 
-    if (!isPaid && email) {
-      hasBundle =
-        await this.consumeBundle(email);
+  if (!isPaid) {
+  if (!email) {
+    logger.warn({ event: 'NO_EMAIL_FOR_BUNDLE', reg });
+  } else {
+    hasBundle = await this.consumeBundle(email);
+
+    if (hasBundle) {
+      accessTier = 'standard'; // or fetch bundle.tier if you support premium bundles
     }
+  }
+}
 
     console.log('🔥 ACCESS CHECK:', {
       isPaid,
@@ -627,27 +600,369 @@ private extractStolen(
   ) {
     return 'unknown';
   }
-
   return isStolen
     ? 'yes'
     : 'no';
 }
-
 private extractWriteOff(
   vdg: any
 ): string {
-
   const writeOffRecords =
     vdg?.Results
       ?.MiaftrDetails
       ?.WriteOffRecordList;
-
   if (!writeOffRecords) {
     return 'unknown';
   }
-
   return writeOffRecords.length > 0
     ? 'yes'
     : 'no';
+}
+
+async generatePdfBuffer(
+  reg: string,
+  data: any,
+  tier: string,
+): Promise<Buffer> {
+
+  const PDFDocument = require('pdfkit');
+  const doc = new PDFDocument({
+    size: 'A4',
+    margin: 50,
+    bufferPages: true,
+  });
+
+  const chunks: Buffer[] = [];
+  doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+  return new Promise((resolve, reject) => {
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    // =========================
+    // HELPERS
+    // =========================
+    const safe = (v: any): string => {
+      if (v === null || v === undefined || v === '' || v === 'Unknown') {
+        return 'Not available';
+      }
+      return String(v);
+    };
+
+    const statusIcon = (status: string | null | undefined): string => {
+      if (!status) return '⚠ Unknown';
+      const s = String(status).toLowerCase();
+      if (s.includes('valid') || s.includes('taxed') || s.includes('clear')) {
+        return `✔ ${status}`;
+      }
+      return `⚠ ${status}`;
+    };
+
+    const sectionHeader = (title: string) => {
+      doc.moveDown(0.8);
+      doc
+        .fontSize(14)
+        .fillColor('#1a1a1a')
+        .text(title, { underline: true });
+      doc.moveDown(0.4);
+      doc.fontSize(11).fillColor('#333333');
+    };
+
+    const divider = () => {
+      doc.moveDown(0.6);
+      const y = doc.y;
+      doc
+        .strokeColor('#cccccc')
+        .lineWidth(0.5)
+        .moveTo(50, y)
+        .lineTo(545, y)
+        .stroke();
+      doc.moveDown(0.6);
+    };
+
+    const row = (label: string, value: any) => {
+      doc
+        .fontSize(11)
+        .fillColor('#555555')
+        .text(`${label}: `, { continued: true })
+        .fillColor('#000000')
+        .text(safe(value));
+    };
+
+    const v = data?.vehicle || {};
+
+    // =========================
+    // HEADER
+    // =========================
+    doc
+      .fontSize(20)
+      .fillColor('#0a3d62')
+      .text('Vehicle History Report', { align: 'center' });
+
+    doc.moveDown(0.3);
+
+    doc
+      .fontSize(11)
+      .fillColor('#666666')
+      .text(`Registration: ${reg}`, { align: 'center' })
+      .text(`Generated: ${new Date().toLocaleDateString('en-GB')}`, {
+        align: 'center',
+      })
+      .text(`Tier: ${tier.toUpperCase()}`, { align: 'center' });
+
+    divider();
+
+    // =========================
+    // VEHICLE OVERVIEW
+    // =========================
+    sectionHeader('Vehicle Overview');
+
+    row('Registration', v.reg || reg);
+    row('Make', v.make);
+    row('Model', v.model);
+    row('Fuel', v.fuel);
+    row('Colour', v.colour);
+    row('Year', v.year);
+    row('Engine Capacity', v.engineCapacity ? `${v.engineCapacity} cc` : null);
+
+    divider();
+
+    // =========================
+    // KEY CHECKS
+    // =========================
+    sectionHeader('Key Checks');
+
+    if (tier === 'premium') {
+      row(
+        'Finance',
+        data?.finance === 'outstanding'
+          ? '⚠ Outstanding finance'
+          : data?.finance === 'clear'
+          ? '✔ Clear'
+          : '⚠ Unknown',
+      );
+      row(
+        'Stolen',
+        data?.stolen === 'yes'
+          ? '⚠ Reported stolen'
+          : data?.stolen === 'no'
+          ? '✔ Not reported stolen'
+          : '⚠ Unknown',
+      );
+      row(
+        'Write-off',
+        data?.writeOff === 'yes'
+          ? '⚠ Recorded write-off'
+          : data?.writeOff === 'no'
+          ? '✔ No write-off recorded'
+          : '⚠ Unknown',
+      );
+    } else {
+      row('Finance', '🔒 Upgrade required');
+      row('Stolen', '🔒 Upgrade required');
+      row('Write-off', '🔒 Upgrade required');
+    }
+
+    row('MOT', statusIcon(v.motStatus));
+    row('Tax', statusIcon(v.taxStatus));
+
+    divider();
+
+    // =========================
+    // RISK SUMMARY
+    // =========================
+    sectionHeader('Risk Summary');
+
+    let riskScore = 0;
+    const issues: string[] = [];
+
+    if (tier === 'premium') {
+      if (data?.finance === 'outstanding') {
+        riskScore += 40;
+        issues.push('Outstanding finance recorded');
+      }
+      if (data?.stolen === 'yes') {
+        riskScore += 50;
+        issues.push('Vehicle reported stolen');
+      }
+      if (data?.writeOff === 'yes') {
+        riskScore += 30;
+        issues.push('Insurance write-off recorded');
+      }
+    }
+
+    const motLower = String(v.motStatus || '').toLowerCase();
+    const taxLower = String(v.taxStatus || '').toLowerCase();
+
+    if (motLower && !motLower.includes('valid')) {
+      riskScore += 15;
+      issues.push('MOT not valid');
+    }
+    if (taxLower && !taxLower.includes('taxed')) {
+      riskScore += 10;
+      issues.push('Vehicle not taxed');
+    }
+
+    if (riskScore > 100) riskScore = 100;
+
+    let riskLevel = 'LOW';
+    let riskColor = '#2ecc71';
+    if (riskScore >= 60) {
+      riskLevel = 'HIGH';
+      riskColor = '#e74c3c';
+    } else if (riskScore >= 30) {
+      riskLevel = 'MEDIUM';
+      riskColor = '#f39c12';
+    }
+
+    row('Risk Score', `${riskScore} / 100`);
+    doc
+      .fontSize(11)
+      .fillColor('#555555')
+      .text('Risk Level: ', { continued: true })
+      .fillColor(riskColor)
+      .text(riskLevel)
+      .fillColor('#333333');
+
+    doc.moveDown(0.4);
+
+    if (issues.length === 0) {
+      doc
+        .fontSize(10)
+        .fillColor('#2ecc71')
+        .text('✔ No major issues detected');
+    } else {
+      doc.fontSize(10).fillColor('#c0392b');
+      issues.forEach((issue) => doc.text(`• ${issue}`));
+    }
+
+    doc.fillColor('#333333');
+
+    if (tier !== 'premium') {
+      doc.moveDown(0.3);
+      doc
+        .fontSize(9)
+        .fillColor('#888888')
+        .text(
+          'Note: Risk score is limited on Standard reports. Upgrade to Premium for finance, stolen, and write-off data.',
+          { align: 'left' },
+        );
+      doc.fillColor('#333333');
+    }
+
+    divider();
+
+    // =========================
+    // VALUATION
+    // =========================
+    sectionHeader('Valuation');
+    row(
+      'Estimated Value',
+      v.estimatedValue ? `£${v.estimatedValue}` : null,
+    );
+
+    divider();
+
+    // =========================
+    // MOT HISTORY (last 3)
+    // =========================
+    sectionHeader('MOT History');
+
+    const motHistory = Array.isArray(data?.motHistory)
+      ? data.motHistory.slice(0, 3)
+      : [];
+
+    if (motHistory.length === 0) {
+      doc.fontSize(10).fillColor('#888888').text('No MOT history available.');
+      doc.fillColor('#333333');
+    } else {
+      motHistory.forEach((mot: any, i: number) => {
+        doc.fontSize(11).fillColor('#000000').text(`Test ${i + 1}`);
+        doc.fontSize(10).fillColor('#555555');
+        doc.text(`  Date: ${safe(mot?.TestDate || mot?.completedDate)}`);
+        doc.text(`  Result: ${safe(mot?.TestResult || mot?.testResult)}`);
+        doc.text(`  Mileage: ${safe(mot?.OdometerValue || mot?.odometerValue)}`);
+        doc.moveDown(0.3);
+      });
+      doc.fillColor('#333333');
+    }
+
+    divider();
+
+    // =========================
+    // KEEPER HISTORY
+    // =========================
+    sectionHeader('Keeper History');
+
+    const keeperHistory = Array.isArray(data?.keeperHistory)
+      ? data.keeperHistory
+      : [];
+
+    if (keeperHistory.length === 0) {
+      doc
+        .fontSize(10)
+        .fillColor('#888888')
+        .text('No keeper history available.');
+      doc.fillColor('#333333');
+    } else {
+      keeperHistory.forEach((k: any, i: number) => {
+        doc.fontSize(10).fillColor('#555555');
+        doc.text(
+          `  Keeper ${i + 1}: ${safe(k?.DateOfTransaction || k?.date)} — ${safe(
+            k?.NumberOfPreviousKeepers ?? k?.previousKeepers,
+          )} previous keeper(s)`,
+        );
+      });
+      doc.fillColor('#333333');
+    }
+
+    // =========================
+    // PREMIUM EXTENSIONS
+    // =========================
+    if (tier === 'premium') {
+      divider();
+      sectionHeader('Premium Details');
+
+      row('Body Style', v.bodyStyle);
+      row('Age', v.age);
+      row('Tax Band', v.taxBand);
+      row('Annual Tax', v.annualTax ? `£${v.annualTax}` : null);
+      row('MOT Days Left', v.motDaysLeft);
+      row('Tax Days Left', v.taxDaysLeft);
+      row('Average Mileage', v.averageMileage);
+    }
+
+    // =========================
+    // UPSELL (STANDARD ONLY)
+    // =========================
+    if (tier === 'standard') {
+      divider();
+      doc
+        .fontSize(13)
+        .fillColor('#0a3d62')
+        .text('Upgrade to Premium to unlock:', { align: 'center' });
+
+      doc.moveDown(0.4);
+      doc.fontSize(11).fillColor('#333333');
+      doc.text('✔ Finance check', { align: 'center' });
+      doc.text('✔ Stolen vehicle check', { align: 'center' });
+      doc.text('✔ Insurance write-off', { align: 'center' });
+      doc.text('✔ Advanced risk data', { align: 'center' });
+    }
+
+    // =========================
+    // FOOTER
+    // =========================
+    doc.moveDown(1.5);
+    doc
+      .fontSize(8)
+      .fillColor('#999999')
+      .text(
+        'This report is generated from DVLA, MOT, and partner data sources. CheapRegCheck is not liable for inaccuracies in third-party data.',
+        { align: 'center' },
+      );
+
+    doc.end();
+  });
 }
 }

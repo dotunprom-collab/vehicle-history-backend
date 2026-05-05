@@ -6,6 +6,8 @@ import { Bundle } from '../bundle/bundle.entity';
 import { logger } from '../logger';
 import * as Sentry from '@sentry/node';
 import { ConsumedSession } from './consumed-session.entity';
+import { EmailService } from '../common/email.service';
+import { VehicleService } from '../vehicle/vehicle.service';
 
 @Injectable()
 export class PaymentService {
@@ -17,24 +19,20 @@ export class PaymentService {
     private bundleRepo: Repository<Bundle>,
     @InjectRepository(ConsumedSession)
     private consumedSessionRepo: Repository<ConsumedSession>,
+    private vehicleService: VehicleService,
+    private emailService: EmailService,
   ) {
 
     const stripeKey =
       process.env.STRIPE_SECRET_KEY;
-
       console.log('🔥 STRIPE KEY USED:', stripeKey?.slice(0, 10));
-
     if (!stripeKey) {
-
       console.error(
         '❌ STRIPE_SECRET_KEY missing'
       );
-
       this.stripe = null;
-
       return;
     }
-
     this.stripe = new Stripe(
       stripeKey,
       {
@@ -48,25 +46,19 @@ export class PaymentService {
   // =========================
 
   async createCheckoutSession(body: any) {
-
     const reg =
       body?.registration ||
       body?.reg;
-
     const tier =
       body?.tier ||
       'standard';
-
     const type =
       body?.type ||
       'single';
-
     const quantity =
       Number(body?.quantity || 1);
-
     const email =
       body?.email || null;
-
     // =========================
     // VALIDATION
     // =========================
@@ -79,7 +71,6 @@ export class PaymentService {
         'Registration required'
       );
     }
-
     if (
       !['standard', 'premium']
         .includes(tier)
@@ -88,7 +79,6 @@ export class PaymentService {
         'Invalid tier'
       );
     }
-
     if (
       ![
         'single',
@@ -298,60 +288,159 @@ async handleWebhook(req: any, signature: string) {
 
     case 'checkout.session.completed': {
 
-      const session =
-        event.data.object as Stripe.Checkout.Session;
+  const session =
+    event.data.object as Stripe.Checkout.Session;
 
-      // 🔁 Prevent duplicates
-      const existing =
-        await this.consumedSessionRepo.findOne({
-          where: { sessionId: session.id },
-        });
+  const reg = session.metadata?.reg;
+  const tier = session.metadata?.tier || 'standard';
 
-      if (existing) {
-        logger.warn({
-          event: 'STRIPE_DUPLICATE_WEBHOOK',
-          sessionId: session.id,
-        });
-        break;
-      }
+  const email =
+    session.customer_details?.email ||
+    session.customer_email ||
+    'guest';
 
-      await this.consumedSessionRepo.save({
-        sessionId: session.id,
-        email:
-          session.customer_details?.email ||
-          session.customer_email ||
-          'guest',
+  // 🚨 HARD VALIDATION
+  if (!reg) {
+    logger.error({
+      event: 'MISSING_REG_IN_METADATA',
+      sessionId: session.id,
+      metadata: session.metadata,
+    });
+    break;
+  }
+
+  // 🔁 Prevent duplicates
+  const existing =
+    await this.consumedSessionRepo.findOne({
+      where: { sessionId: session.id },
+    });
+
+  if (existing) {
+    logger.warn({
+      event: 'STRIPE_DUPLICATE_WEBHOOK',
+      sessionId: session.id,
+    });
+    break;
+  }
+
+  logger.info({
+    event: 'STRIPE_PAYMENT_SUCCESS',
+    sessionId: session.id,
+    reg,
+    email,
+    tier,
+  });
+
+  // =========================
+  // 🎟️ BUNDLE HANDLING
+  // =========================
+  if (session.metadata?.type === 'bundle') {
+
+    await this.createBundle(
+      email,
+      Number(session.metadata.quantity || 1),
+      tier,
+    );
+
+    logger.info({
+      event: 'BUNDLE_CREATED',
+      email,
+      quantity: Number(session.metadata.quantity || 1),
+      tier,
+    });
+  }
+
+  // =========================
+  // 📊 GENERATE REPORT
+  // =========================
+  let report: any;
+
+  try {
+    report =
+      await this.vehicleService.getFullReport(
+        reg,
+        session.id,
+      );
+
+    logger.info({
+      event: 'REPORT_GENERATED',
+      reg,
+      tier,
+    });
+
+  } catch (err: any) {
+
+    logger.error({
+      event: 'REPORT_GENERATION_FAILED',
+      error: err.message,
+      reg,
+    });
+
+    Sentry.captureException(err);
+  }
+
+  // =========================
+  // 📄 GENERATE PDF
+  // =========================
+  let pdfBuffer: Buffer | null = null;
+
+  try {
+    pdfBuffer =
+      await this.vehicleService.generatePdfBuffer(
+        reg,
+        report,
+        tier,
+      );
+
+  } catch (err: any) {
+    logger.error({
+      event: 'PDF_GENERATION_FAILED',
+      error: err.message,
+      reg,
+    });
+  }
+
+  // =========================
+  // 📧 SEND EMAIL
+  // =========================
+  try {
+    if (pdfBuffer) {
+      await this.emailService.sendReport({
+        to: email,
+        reg,
+        tier,
+        pdfBuffer,
       });
 
       logger.info({
-        event: 'STRIPE_PAYMENT_SUCCESS',
-        sessionId: session.id,
-        metadata: session.metadata,
+        event: 'EMAIL_SENT',
+        email,
+        reg,
       });
-
-      if (session.metadata?.type === 'bundle') {
-
-        const email =
-          session.customer_details?.email ||
-          session.customer_email ||
-          'guest';
-
-        await this.createBundle(
-          email || 'guest',
-          Number(session.metadata.quantity || 1),
-          session.metadata.tier || 'standard',
-        );
-
-        logger.info({
-          event: 'BUNDLE_CREATED',
-          email: email || 'guest',
-          quantity: Number(session.metadata.quantity || 1),
-          tier: session.metadata.tier,
-        });
-      }
-
-      break;
     }
+
+  } catch (err: any) {
+
+    logger.error({
+      event: 'EMAIL_FAILED',
+      error: err.message,
+      email,
+    });
+
+    Sentry.captureException(err);
+  }
+
+  // =========================
+  // 💾 SAVE SESSION (LAST)
+  // =========================
+  await this.consumedSessionRepo.save({
+    sessionId: session.id,
+    reg,
+    email,
+  });
+
+  break;
+}
 
     default:
       logger.info({

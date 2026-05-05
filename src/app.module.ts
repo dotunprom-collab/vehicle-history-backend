@@ -11,6 +11,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { RiskService } from './vehicle/risk.service';
 import { ConsumedSession } from './payment/consumed-session.entity';
+import { EmailService } from './common/email.service';
 
 import {
   ThrottlerModule,

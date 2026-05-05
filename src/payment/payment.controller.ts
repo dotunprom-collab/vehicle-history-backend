@@ -99,14 +99,12 @@ if (
     session.metadata.tier || 'standard',
   );
 }
-
       return {
         reg,
         email,
         sessionId, // ✅ THIS replaces JWT
         status: 'paid',
       };
-
     } catch (err) {
       Sentry.captureException(err);
       return { error: 'Failed to retrieve session' };
