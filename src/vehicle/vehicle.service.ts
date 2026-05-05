@@ -402,8 +402,9 @@ async getFullReport(
       if (!alreadyUsed) {
         await this.consumedSessionRepo.save({
           sessionId,
-        email: email || 'guest',
-});
+          email: email || 'guest',
+          reg,
+        });
         
       }
     }
