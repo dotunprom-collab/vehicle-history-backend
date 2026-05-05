@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { Bundle } from '../bundle/bundle.entity';
 import { logger } from '../logger';
 import * as Sentry from '@sentry/node';
+import { ConsumedSession } from './consumed-session.entity';
 
 @Injectable()
 export class PaymentService {
@@ -14,6 +15,8 @@ export class PaymentService {
   constructor(
     @InjectRepository(Bundle)
     private bundleRepo: Repository<Bundle>,
+    @InjectRepository(ConsumedSession)
+    private consumedSessionRepo: Repository<ConsumedSession>,
   ) {
 
     const stripeKey =
@@ -262,10 +265,8 @@ export class PaymentService {
   // 🔔 STRIPE WEBHOOK
   // =========================
 
-  async handleWebhook(
-  req: any,
-  signature: string,
-) {
+async handleWebhook(req: any, signature: string) {
+
   if (!this.stripe) {
     throw new Error('Stripe not initialized');
   }
@@ -273,55 +274,63 @@ export class PaymentService {
   const webhookSecret =
     process.env.STRIPE_WEBHOOK_SECRET;
 
-  if (!webhookSecret) {
-    throw new Error('Missing webhook secret');
-  }
-
   let event: Stripe.Event;
 
   try {
-    // ✅ ALWAYS use rawBody for Stripe verification
-    event =
-      this.stripe.webhooks.constructEvent(
-        req.rawBody,
-        signature,
-        webhookSecret,
-      );
-  } catch (err: any) {
-    console.error(
-      '❌ Webhook signature failed:',
-      err.message,
+    event = this.stripe.webhooks.constructEvent(
+      req.rawBody,
+      signature,
+      webhookSecret as string,
     );
+  } catch (err: any) {
+
+    logger.error({
+      event: 'STRIPE_WEBHOOK_SIGNATURE_FAILED',
+      error: err.message,
+    });
+
     Sentry.captureException(err);
 
     throw new Error('Invalid webhook signature');
   }
 
-  // =========================
-  // 🎯 HANDLE EVENTS
-  // =========================
   switch (event.type) {
 
     case 'checkout.session.completed': {
+
       const session =
         event.data.object as Stripe.Checkout.Session;
 
-      console.log(
-        '✅ PAYMENT SUCCESS:',
-        session.id,
-      );
+      // 🔁 Prevent duplicates
+      const existing =
+        await this.consumedSessionRepo.findOne({
+          where: { sessionId: session.id },
+        });
 
-      console.log(
-        '✅ METADATA:',
-        session.metadata,
-      );
+      if (existing) {
+        logger.warn({
+          event: 'STRIPE_DUPLICATE_WEBHOOK',
+          sessionId: session.id,
+        });
+        break;
+      }
 
-      // =========================
-      // 🎟️ BUNDLE CREATION
-      // =========================
-      if (
-        session.metadata?.type === 'bundle'
-      ) {
+      await this.consumedSessionRepo.save({
+        sessionId: session.id,
+        email:
+          session.customer_details?.email ||
+          session.customer_email ||
+          'guest',
+      });
+
+      logger.info({
+        event: 'STRIPE_PAYMENT_SUCCESS',
+        sessionId: session.id,
+        metadata: session.metadata,
+      });
+
+      if (session.metadata?.type === 'bundle') {
+
         const email =
           session.customer_details?.email ||
           session.customer_email ||
@@ -332,15 +341,23 @@ export class PaymentService {
           Number(session.metadata.quantity || 1),
           session.metadata.tier || 'standard',
         );
+
+        logger.info({
+          event: 'BUNDLE_CREATED',
+          email,
+          quantity: Number(session.metadata.quantity || 1),
+          tier: session.metadata.tier,
+        });
       }
 
       break;
     }
 
     default:
-      console.log(
-        `Unhandled event: ${event.type}`,
-      );
+      logger.info({
+        event: 'STRIPE_UNHANDLED_EVENT',
+        type: event.type,
+      });
   }
 
   return { received: true };
