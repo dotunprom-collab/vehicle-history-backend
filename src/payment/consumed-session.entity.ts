@@ -16,8 +16,8 @@ export class ConsumedSession {
   @Column()
   reg!: string;
 
-  @Column({ nullable: true })
-  email!: string | null; // ✅ FIXED
+  @Column({ type: 'text', nullable: true }) // ✅ FIX
+  email!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;
