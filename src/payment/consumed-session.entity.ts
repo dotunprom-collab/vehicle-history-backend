@@ -4,7 +4,6 @@ import {
   Column,
   CreateDateColumn,
 } from 'typeorm';
-
 @Entity()
 export class ConsumedSession {
   @PrimaryGeneratedColumn()
@@ -13,6 +12,8 @@ export class ConsumedSession {
   sessionId!: string;
   @Column()
   reg!: string;
+  @Column()
+  email!: string;
   @CreateDateColumn()
   createdAt!: Date;
 }

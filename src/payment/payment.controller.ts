@@ -11,6 +11,8 @@ import {
 import { Request } from 'express';
 import { PaymentService } from './payment.service';
 import { Throttle } from '@nestjs/throttler';
+import { logger } from '../logger';
+import * as Sentry from '@sentry/node';
 
 @Controller('payment')
 export class PaymentController {
@@ -69,6 +71,15 @@ if (!session || 'error' in session) {
 if (session.payment_status !== 'paid') {
   return { error: 'Payment not completed' };
 }
+
+logger.info({
+  event: 'PAYMENT_SUCCESS',
+  sessionId,
+  email:
+    session.customer_details?.email ||
+    session.customer_email,
+});
+
 const reg = session.metadata?.reg;
 const email =
   session.customer_details?.email ||
@@ -97,6 +108,7 @@ if (
       };
 
     } catch (err) {
+      Sentry.captureException(err);
       return { error: 'Failed to retrieve session' };
     }
   }

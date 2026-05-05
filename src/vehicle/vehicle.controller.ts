@@ -4,6 +4,7 @@ import { Response } from 'express';
 import PDFDocument from 'pdfkit';
 import { Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import * as Sentry from '@sentry/node';
 
 @Controller('vehicle')
 export class VehicleController {
@@ -171,9 +172,20 @@ if (Array.isArray(data.insights)) {
 
 doc.end();
 
-    } catch (error) {
-      console.error('PDF ROUTE ERROR:', error);
-    }
+    } catch (error: any) {
+  console.error('PDF ROUTE ERROR:', error);
+
+  Sentry.captureException(error, {
+    extra: {
+      route: 'vehicle/pdf',
+      registration: body?.registration,
+    },
+  });
+
+  return res.status(500).json({
+    error: 'Failed to generate PDF',
+  });
+}
   }
   
 }

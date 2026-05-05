@@ -3,6 +3,8 @@ import Stripe from 'stripe';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Bundle } from '../bundle/bundle.entity';
+import { logger } from '../logger';
+import * as Sentry from '@sentry/node';
 
 @Injectable()
 export class PaymentService {
@@ -16,6 +18,8 @@ export class PaymentService {
 
     const stripeKey =
       process.env.STRIPE_SECRET_KEY;
+
+      console.log('🔥 STRIPE KEY USED:', stripeKey?.slice(0, 10));
 
     if (!stripeKey) {
 
@@ -201,6 +205,14 @@ export class PaymentService {
         'standard';
     }
 
+    logger.info({
+      event: 'CHECKOUT_CREATED',
+      reg,
+      tier,
+      type,
+      quantity,
+    });
+
     // =========================
     // CREATE SESSION
     // =========================
@@ -251,101 +263,88 @@ export class PaymentService {
   // =========================
 
   async handleWebhook(
-    req: any,
-    signature: string,
-  ) {
-
-    if (!this.stripe) {
-      throw new Error(
-        'Stripe not initialized'
-      );
-    }
-
-    const webhookSecret =
-      process.env
-        .STRIPE_WEBHOOK_SECRET;
-
-    if (!webhookSecret) {
-      throw new Error(
-        'Missing webhook secret'
-      );
-    }
-
-    let event: Stripe.Event;
-    try {
-      event =
-        this.stripe.webhooks
-          .constructEvent(
-            req.rawBody,
-            signature,
-            webhookSecret,
-          );
-    } catch (err: any) {
-
-      console.error(
-        '❌ Webhook signature failed:',
-        err.message,
-      );
-
-      throw new Error(
-        'Invalid webhook signature'
-      );
-    }
-
-    switch (event.type) {
-
-      case
-        'checkout.session.completed':
-        const session =
-          event.data.object as
-          Stripe.Checkout.Session;
-
-        console.log(
-          '✅ PAYMENT SUCCESS:',
-          session.id,
-        );
-
-        console.log(
-          '✅ METADATA:',
-          session.metadata,
-        );
-
-        if (
-          session.metadata?.type ===
-          'bundle'
-        ) {
-
-          const email =
-            session.customer_details
-              ?.email ||
-            session.customer_email ||
-            'guest';
-
-          await this.createBundle(
-
-            email,
-
-            Number(
-              session.metadata
-                .quantity || 1
-            ),
-            session.metadata
-              .tier ||
-              'standard',
-          );
-        }
-        break;
-      default:
-
-        console.log(
-          `Unhandled event: ${event.type}`
-        );
-    }
-
-    return {
-      received: true,
-    };
+  req: any,
+  signature: string,
+) {
+  if (!this.stripe) {
+    throw new Error('Stripe not initialized');
   }
+
+  const webhookSecret =
+    process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    throw new Error('Missing webhook secret');
+  }
+
+  let event: Stripe.Event;
+
+  try {
+    // ✅ ALWAYS use rawBody for Stripe verification
+    event =
+      this.stripe.webhooks.constructEvent(
+        req.rawBody,
+        signature,
+        webhookSecret,
+      );
+  } catch (err: any) {
+    console.error(
+      '❌ Webhook signature failed:',
+      err.message,
+    );
+    Sentry.captureException(err);
+
+    throw new Error('Invalid webhook signature');
+  }
+
+  // =========================
+  // 🎯 HANDLE EVENTS
+  // =========================
+  switch (event.type) {
+
+    case 'checkout.session.completed': {
+      const session =
+        event.data.object as Stripe.Checkout.Session;
+
+      console.log(
+        '✅ PAYMENT SUCCESS:',
+        session.id,
+      );
+
+      console.log(
+        '✅ METADATA:',
+        session.metadata,
+      );
+
+      // =========================
+      // 🎟️ BUNDLE CREATION
+      // =========================
+      if (
+        session.metadata?.type === 'bundle'
+      ) {
+        const email =
+          session.customer_details?.email ||
+          session.customer_email ||
+          'guest';
+
+        await this.createBundle(
+          email,
+          Number(session.metadata.quantity || 1),
+          session.metadata.tier || 'standard',
+        );
+      }
+
+      break;
+    }
+
+    default:
+      console.log(
+        `Unhandled event: ${event.type}`,
+      );
+  }
+
+  return { received: true };
+}
 
   // =========================
   // 📦 GET SESSION
@@ -382,6 +381,8 @@ export class PaymentService {
         '🔥 SESSION ERROR:',
         error.message
       );
+
+      Sentry.captureException(error);
 
       return {
         error:

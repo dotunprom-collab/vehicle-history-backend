@@ -7,12 +7,16 @@ import { Bundle } from '../bundle/bundle.entity';
 import { PaymentService } from '../payment/payment.service';
 import { VehicleReport } from '../types/report';
 import { AuthService } from '../auth/auth.service';
+import { ConsumedSession } from '../payment/consumed-session.entity';
+import { logger } from '../logger';
 
 @Injectable()
 export class VehicleService {
   constructor(
   @InjectRepository(Report)
   private reportRepo: Repository<Report>,
+  @InjectRepository(ConsumedSession)
+  private consumedSessionRepo: Repository<ConsumedSession>,
   @InjectRepository(Bundle)
   private bundleRepo: Repository<Bundle>,
   private paymentService: PaymentService,
@@ -117,7 +121,7 @@ private async fetchRccData(reg: string) {
   console.log('🔥 RCC FETCH:', reg);
 
   console.log('🔥 DOMAIN USED:', process.env.RAPID_API_DOMAIN);
-  
+
   const apiKey = process.env.RAPID_API_KEY;
   const domain = process.env.RAPID_API_DOMAIN;
 
@@ -201,55 +205,84 @@ async getRccStandard(
           ?.KeeperHistory || [],
       writeOff: 'unknown',
     };
-  } catch (err: any) {
-    console.error(
-      '🔥 RCC STANDARD ERROR:',
-      err.response?.data || err.message
-    );
-    throw new Error(
-      'Failed to load standard report'
-    );
-  }
-}
-  private async consumeBundle(email: string): Promise<boolean> {
+ } catch (err: any) {
 
-  const bundle = await this.bundleRepo.findOne({
-    where: {
-      email,
-      active: true,
-    },
-    order: {
-      createdAt: 'DESC',
-    },
+  logger.error({
+    event: 'RCC_STANDARD_ERROR',
+    reg,
+    error: err.message,
+    response: err.response?.data || null,
   });
 
-  if (!bundle) {
-    return false;
-  }
+  throw new Error(
+    'Failed to load standard report'
+  );
+ }
+}
+private async consumeBundle(email: string): Promise<boolean> {
 
-  if (bundle.remaining <= 0) {
+  try {
 
-    bundle.active = false;
+    const bundle = await this.bundleRepo.findOne({
+      where: {
+        email,
+        active: true,
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+
+    if (!bundle) {
+
+      logger.info({
+        event: 'BUNDLE_NOT_FOUND',
+        email,
+      });
+
+      return false;
+    }
+
+    if (bundle.remaining <= 0) {
+
+      bundle.active = false;
+
+      await this.bundleRepo.save(bundle);
+
+      logger.warn({
+        event: 'BUNDLE_EMPTY',
+        email,
+      });
+
+      return false;
+    }
+
+    bundle.remaining -= 1;
+
+    if (bundle.remaining <= 0) {
+      bundle.active = false;
+    }
 
     await this.bundleRepo.save(bundle);
 
-    return false;
+    logger.info({
+      event: 'BUNDLE_CONSUMED',
+      email,
+      remaining: bundle.remaining,
+    });
+
+    return true;
+
+  } catch (err: any) {
+
+    logger.error({
+      event: 'BUNDLE_CONSUME_ERROR',
+      email,
+      error: err.message,
+    });
+
+    return false; // ❗ do NOT throw here (explained below)
   }
-
-  bundle.remaining -= 1;
-
-  if (bundle.remaining <= 0) {
-    bundle.active = false;
-  }
-
-  await this.bundleRepo.save(bundle);
-
-  console.log("🔥 BUNDLE CONSUMED:", {
-    email,
-    remaining: bundle.remaining,
-  });
-
-  return true;
 }
 
   // =========================
@@ -264,41 +297,31 @@ async getFullReport(
     let email: string | null = null;
     let isPaid = false;
     let accessTier = 'free';
+
     // =========================
     // 🔐 VERIFY REPORT TOKEN
     // =========================
-
     if (token) {
       const decoded: any =
         this.authService.verifyToken(token);
-      console.log(
-        '🔥 TOKEN DECODED:',
-        decoded
-      );
+
+      console.log('🔥 TOKEN DECODED:', decoded);
 
       if (!decoded) {
-        throw new Error(
-          'Invalid token'
-        );
+        throw new Error('Invalid token');
       }
 
-      if (
-        decoded.type !== 'report_access'
-      ) {
-
-        throw new Error(
-          'Invalid access type'
-        );
+      if (decoded.type !== 'report_access') {
+        throw new Error('Invalid access type');
       }
 
-      const tokenReg =
-        decoded.reg;
+      const tokenReg = decoded.reg;
+
       if (
         tokenReg &&
         tokenReg.toUpperCase().trim() !==
-        reg.toUpperCase().trim()
+          reg.toUpperCase().trim()
       ) {
-
         throw new Error(
           'Token registration mismatch'
         );
@@ -312,38 +335,28 @@ async getFullReport(
     // =========================
     // 💳 VERIFY STRIPE SESSION
     // =========================
-
     else if (sessionId) {
       const session: any =
         await this.paymentService.getSession(
           sessionId
         );
 
-      // console.log(
-      //   '🔥 STRIPE SESSION:',
-      //   session
-      // );
-
-      if (
-        !session ||
-        session.error
-      ) {
-
-        throw new Error(
-          'Invalid session'
-        );
+      if (!session || session.error) {
+        throw new Error('Invalid session');
       }
 
-      if (
-        session.payment_status !== 'paid'
-      ) {
-
-        throw new Error(
-          'Payment required'
-        );
+      if (session.payment_status !== 'paid') {
+        throw new Error('Payment required');
       }
 
-      isPaid = true;
+      logger.info({
+        event: 'ACCESS_GRANTED',
+        reg,
+        email,
+        tier: accessTier,
+      });
+
+      // ✅ SET EMAIL FIRST (CRITICAL FIX)
       email =
         session.customer_details?.email ||
         session.customer_email ||
@@ -359,12 +372,39 @@ async getFullReport(
       if (
         paidReg &&
         paidReg.toUpperCase().trim() !==
-        reg.toUpperCase().trim()
+          reg.toUpperCase().trim()
       ) {
-
         throw new Error(
           'Session registration mismatch'
         );
+      }
+
+      isPaid = true;
+
+      // =========================
+      // 🔐 PREVENT SESSION REUSE
+      // =========================
+      const alreadyUsed =
+        await this.consumedSessionRepo.findOne({
+          where: { sessionId },
+        });
+
+      if (
+        alreadyUsed &&
+        alreadyUsed.email !== email
+      ) {
+        throw new Error(
+          'Session already used'
+        );
+      }
+
+      // ✅ Save only once
+      if (!alreadyUsed) {
+        await this.consumedSessionRepo.save({
+          sessionId,
+        email: email || 'guest',
+});
+        
       }
     }
 
@@ -372,15 +412,19 @@ async getFullReport(
     // 🎟️ BUNDLE ACCESS
     // =========================
     let hasBundle = false;
-    console.log(
-      '🔥 ACCESS CHECK:',
-      {
-        isPaid,
-        hasBundle,
-        accessTier,
-        email,
-      }
-    );
+
+    if (!isPaid && email) {
+      hasBundle =
+        await this.consumeBundle(email);
+    }
+
+    console.log('🔥 ACCESS CHECK:', {
+      isPaid,
+      hasBundle,
+      accessTier,
+      email,
+    });
+
     // =========================
     // 🔒 ACCESS CONTROL
     // =========================
@@ -389,143 +433,97 @@ async getFullReport(
       !isPaid &&
       !hasBundle
     ) {
-      throw new Error(
-        'Payment required'
-      );
+      throw new Error('Payment required');
     }
-    console.log(
-      '🔥 ACCESS GRANTED'
-    );
+
+    logger.info({
+      event: 'ACCESS_GRANTED',
+      reg,
+      email,
+      tier: accessTier,
+    });
+
     // =========================
     // 🚦 TIER ROUTING
     // =========================
-
     let report: any = null;
-    /*
-    FREE
-    --------------------------------
-    DVLA ONLY
-    */
-    if (
-      accessTier === 'free'
-    ) {
-      report =
-        await this.getPreview(reg);
+
+    // FREE
+    if (accessTier === 'free') {
+      report = await this.getPreview(reg);
     }
-    /*
-    STANDARD
-    --------------------------------
-    RCC STANDARD
-    */
+
+    // STANDARD
     else if (accessTier === 'standard') {
+      report =
+        await this.getRccStandard(reg);
 
-  report = await this.getRccStandard(reg);
-
-  console.log(
-    '🔥 STANDARD REPORT:',
-    JSON.stringify(report, null, 2)
-  );
-}
-
-    /*
-    PREMIUM
-    --------------------------------
-    RCC + VDG RISK DATA
-    */
-
-    else if (
-accessTier === 'premium'
-) {
-
-  // get standard structure
-
-  const standard =
-    await this.getRccStandard(reg);
-
-  // get raw RCC data
-  // for premium-only fields
-
-  const {
-    vehicle
-  } =
-    await this.fetchRccData(reg);
-
-  // get VDG risk data
-
-  const vdg =
-    await this.getVDGData(reg);
-
-  report = {
-
-    // inherit standard report
-
-    ...standard,
-
-    // override tier
-
-    tier: 'premium',
-
-    // extend vehicle data
-
-    vehicle: {
-
-      // inherit standard vehicle fields
-
-      ...standard.vehicle,
-
-      // premium-only additions
-
-      bodyStyle:
-        vehicle?.BodyStyle || null,
-      age:
-        vehicle?.Age || null,
-      taxBand:
-        vehicle?.RoadTaxData?.Band || null,
-      annualTax:
-        vehicle?.RoadTaxData
-          ?.TwelveMonthRate || null,
-      motDaysLeft:
-        vehicle?.DaysLeftUntilMotDue || null,
-      taxDaysLeft:
-        vehicle?.DaysLeftUntilRoadTaxDue || null,
-      averageMileage:
-        vehicle?.AverageMileage || null,
-    },
-
-    // premium risk data
-
-    finance:
-      this.extractFinance(vdg),
-    stolen:
-      this.extractStolen(vdg),
-    writeOff:
-      this.extractWriteOff(vdg),
-  };
-}
-// =========================
-// VDG RISK DATA
-// =========================
-    else {
-
-      throw new Error(
-        'Invalid access tier'
+      console.log(
+        '🔥 STANDARD REPORT:',
+        JSON.stringify(report, null, 2)
       );
+    }
+
+    // PREMIUM
+    else if (accessTier === 'premium') {
+      const standard =
+        await this.getRccStandard(reg);
+
+      const { vehicle } =
+        await this.fetchRccData(reg);
+
+      const vdg =
+        await this.getVDGData(reg);
+
+      report = {
+        ...standard,
+        tier: 'premium',
+        vehicle: {
+          ...standard.vehicle,
+          bodyStyle:
+            vehicle?.BodyStyle || null,
+          age:
+            vehicle?.Age || null,
+          taxBand:
+            vehicle?.RoadTaxData?.Band ||
+            null,
+          annualTax:
+            vehicle?.RoadTaxData
+              ?.TwelveMonthRate || null,
+          motDaysLeft:
+            vehicle?.DaysLeftUntilMotDue ||
+            null,
+          taxDaysLeft:
+            vehicle
+              ?.DaysLeftUntilRoadTaxDue ||
+            null,
+          averageMileage:
+            vehicle?.AverageMileage ||
+            null,
+        },
+        finance:
+          this.extractFinance(vdg),
+        stolen:
+          this.extractStolen(vdg),
+        writeOff:
+          this.extractWriteOff(vdg),
+      };
+    }
+
+    else {
+      throw new Error('Invalid access tier');
     }
 
     // =========================
     // 💾 SAVE REPORT
     // =========================
-
     await this.reportRepo.save({
-
       reg,
-
-      userId:
-        email || 'guest',
-        data: report,
-        status: 'paid',
-        pkg: accessTier,
-      });
+      userId: email || 'guest',
+      data: report,
+      status: 'paid',
+      pkg: accessTier,
+    });
 
     console.log(
       '🔥 RETURNING REPORT — tier:',
@@ -535,9 +533,7 @@ accessTier === 'premium'
     // =========================
     // 🔐 GENERATE ACCESS TOKEN
     // =========================
-
     if (accessTier === 'free') {
-
       return report;
     }
 
@@ -554,10 +550,11 @@ accessTier === 'premium'
     };
 
   } catch (err: any) {
-    console.error(
-      '🔥 FULL REPORT ERROR:',
-      err.message
-    );
+    logger.error({
+      event: 'FULL_REPORT_ERROR',
+      error: err.message,
+      reg,
+    });
 
     return {
       error: err.message,
