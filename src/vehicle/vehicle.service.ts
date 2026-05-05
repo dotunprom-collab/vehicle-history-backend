@@ -120,8 +120,12 @@ export class VehicleService {
 
 private async fetchRccData(reg: string) {
 
-  console.log('🔥 RCC FETCH:', reg);
+   logger.info({
+    event: 'RCC_FETCH',
+    reg,
+  });
 
+  console.log('🔥 RCC FETCH:', reg);
   console.log('🔥 DOMAIN USED:', process.env.RAPID_API_DOMAIN);
 
   const apiKey = process.env.RAPID_API_KEY;
@@ -136,10 +140,15 @@ private async fetchRccData(reg: string) {
   const response = await axios.get(url);
   const data = response.data;
 
-  console.log(
-    '🔥 RCC RAW FULL:',
-    JSON.stringify(data, null, 2)
-  );
+  if (process.env.NODE_ENV !== 'production') {
+   console.log('DEBUG:', data);
+  }
+
+  console.log('🔥 RCC SUMMARY:', {
+    reg,
+    make: data?.Results?.InitialVehicleCheckModel?.BasicVehicleDetailsModel?.Make,
+    model: data?.Results?.InitialVehicleCheckModel?.BasicVehicleDetailsModel?.Model,
+  });
 
   const ivcm =
     data?.Results?.InitialVehicleCheckModel;
@@ -147,10 +156,13 @@ private async fetchRccData(reg: string) {
   const vehicle =
     ivcm?.BasicVehicleDetailsModel;
 
-  console.log(
-    '🔥 RCC VEHICLE:',
-    JSON.stringify(vehicle, null, 2)
-  );
+  logger.info({
+  event: 'RCC_VEHICLE_PARSED',
+  reg,
+  make: vehicle?.Make || 'N/A',
+  model: vehicle?.Model || 'N/A',
+  year: vehicle?.YearOfManufacture || 'N/A',
+});
 
   return {
     data,
@@ -434,10 +446,13 @@ async getFullReport(
       report =
         await this.getRccStandard(reg);
 
-      console.log(
-        '🔥 STANDARD REPORT:',
-        JSON.stringify(report, null, 2)
-      );
+      logger.info({
+  event: 'STANDARD_REPORT_GENERATED',
+  reg,
+  tier: report?.tier,
+  make: report?.vehicle?.make || 'N/A',
+  model: report?.vehicle?.model || 'N/A',
+});
     }
 
     // PREMIUM
@@ -963,8 +978,7 @@ async generatePdfBuffer(
         'This report is generated from DVLA, MOT, and partner data sources. CheapRegCheck is not liable for inaccuracies in third-party data.',
         { align: 'center' },
       );
-
     doc.end();
   });
-}
+  }
 }
