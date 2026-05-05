@@ -9,6 +9,7 @@ import { VehicleReport } from '../types/report';
 import { AuthService } from '../auth/auth.service';
 import { ConsumedSession } from '../payment/consumed-session.entity';
 import { logger } from '../logger';
+import { Inject, forwardRef } from '@nestjs/common';
 
 @Injectable()
 export class VehicleService {
@@ -19,6 +20,7 @@ export class VehicleService {
   private consumedSessionRepo: Repository<ConsumedSession>,
   @InjectRepository(Bundle)
   private bundleRepo: Repository<Bundle>,
+  @Inject(forwardRef(() => PaymentService))
   private paymentService: PaymentService,
   private authService: AuthService,
 ) {}

@@ -1,26 +1,26 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { VehicleController, HealthController } from './vehicle/vehicle.controller';
-import { VehicleService } from './vehicle/vehicle.service';
-import { PaymentController } from './payment/payment.controller';
-import { PaymentService } from './payment/payment.service';
-import { Report } from './reports/report.entity';
-import { Bundle } from './bundle/bundle.entity';
-import { AuthModule } from './auth/auth.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { join } from 'path';
+
+import { VehicleController, HealthController } from './vehicle/vehicle.controller';
+import { PaymentController } from './payment/payment.controller';
+
+import { VehicleService } from './vehicle/vehicle.service';
+import { PaymentService } from './payment/payment.service';
 import { RiskService } from './vehicle/risk.service';
-import { ConsumedSession } from './payment/consumed-session.entity';
 import { EmailService } from './common/email.service';
 
-import {
-  ThrottlerModule,
-} from '@nestjs/throttler';
+import { Report } from './reports/report.entity';
+import { Bundle } from './bundle/bundle.entity';
+import { ConsumedSession } from './payment/consumed-session.entity';
+
+import { AuthModule } from './auth/auth.module';
 
 @Module({
-
   imports: [
-
+    // 🔐 RATE LIMITING
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
@@ -28,27 +28,18 @@ import {
       },
     ]),
 
-    // ✅ SERVE FRONTEND
+    // 🌐 FRONTEND
     ServeStaticModule.forRoot({
-      rootPath: join(
-        process.cwd(),
-        'public/frontend'
-      ),
+      rootPath: join(process.cwd(), 'public/frontend'),
       serveRoot: '/',
       exclude: ['/api*'],
     }),
 
-    // ✅ DATABASE
+    // 🗄 DATABASE
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'db.sqlite',
-
-      entities: [
-        Report,
-        Bundle,
-        ConsumedSession,
-      ],
-
+      entities: [Report, Bundle, ConsumedSession],
       synchronize: true,
     }),
 
@@ -58,7 +49,8 @@ import {
       ConsumedSession,
     ]),
 
-    AuthModule,
+    // ⚠️ IMPORTANT: wrap in forwardRef because services depend on each other
+    forwardRef(() => AuthModule),
   ],
 
   controllers: [
@@ -71,7 +63,7 @@ import {
     VehicleService,
     PaymentService,
     RiskService,
+    EmailService, // ✅ THIS WAS MISSING (CRITICAL)
   ],
 })
-
 export class AppModule {}

@@ -8,20 +8,21 @@ import * as Sentry from '@sentry/node';
 import { ConsumedSession } from './consumed-session.entity';
 import { EmailService } from '../common/email.service';
 import { VehicleService } from '../vehicle/vehicle.service';
+import { Inject, forwardRef } from '@nestjs/common';
 
 @Injectable()
 export class PaymentService {
-
   private stripe: Stripe | null;
-
   constructor(
-    @InjectRepository(Bundle)
-    private bundleRepo: Repository<Bundle>,
-    @InjectRepository(ConsumedSession)
-    private consumedSessionRepo: Repository<ConsumedSession>,
-    private vehicleService: VehicleService,
-    private emailService: EmailService,
-  ) {
+  @InjectRepository(Bundle)
+  private bundleRepo: Repository<Bundle>,
+  @InjectRepository(ConsumedSession)
+  private consumedSessionRepo: Repository<ConsumedSession>,
+  @Inject(forwardRef(() => VehicleService))
+  private vehicleService: VehicleService,
+  private emailService: EmailService,
+
+) {
 
     const stripeKey =
       process.env.STRIPE_SECRET_KEY;
@@ -109,7 +110,6 @@ export class PaymentService {
     if (
       type === 'upgrade'
     ) {
-
       if (
         tier !== 'premium'
       ) {
@@ -119,7 +119,6 @@ export class PaymentService {
       }
 
       price = 300;
-
       name =
         'Premium Upgrade';
     }
@@ -138,11 +137,9 @@ export class PaymentService {
           ? 'Premium Vehicle Check'
           : 'Standard Vehicle Check';
     }
-
     else if (
       type === 'bundle'
     ) {
-
       if (
         quantity !== 3 &&
         quantity !== 5
@@ -151,7 +148,6 @@ export class PaymentService {
           'Invalid bundle quantity'
         );
       }
-
       if (
         tier === 'premium'
       ) {
@@ -160,18 +156,14 @@ export class PaymentService {
           quantity === 3
             ? 1999
             : 2999;
-
         name =
           `${quantity} Premium Reports`;
       }
-
       else {
-
         price =
           quantity === 3
             ? 1499
             : 2299;
-
         name =
           `${quantity} Standard Reports`;
       }
