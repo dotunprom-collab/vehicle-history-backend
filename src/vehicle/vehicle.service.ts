@@ -150,11 +150,8 @@ private async fetchRccData(reg: string) {
     model: data?.Results?.InitialVehicleCheckModel?.BasicVehicleDetailsModel?.Model,
   });
 
-  const ivcm =
-    data?.Results?.InitialVehicleCheckModel;
-
   const vehicle =
-    ivcm?.BasicVehicleDetailsModel;
+  data?.Results?.InitialVehicleCheckModel?.BasicVehicleDetailsModel || null;
 
   logger.info({
   event: 'RCC_VEHICLE_PARSED',
@@ -166,7 +163,6 @@ private async fetchRccData(reg: string) {
 
   return {
     data,
-    ivcm,
     vehicle,
   };
 }
@@ -175,58 +171,61 @@ private async fetchRccData(reg: string) {
 // RCC STANDARD
 // =========================
 
-async getRccStandard(
-  reg: string
-) {
+async getRccStandard(reg: string) {
   try {
-    const {
-      vehicle
-    } =
+
+    const { vehicle, data } =
       await this.fetchRccData(reg);
+
+    if (!vehicle) {
+      throw new Error('RCC vehicle data missing');
+    }
+
+    if (!vehicle) {
+      logger.error({
+        event: 'RCC_EMPTY_RESPONSE',
+        reg,
+        data,
+      });
+
+      throw new Error('RCC returned no vehicle data');
+    }
+
     return {
       tier: 'standard',
       vehicle: {
         reg,
-        make:
-          vehicle?.Make || 'Unknown',
-        model:
-          vehicle?.Model || 'Unknown',
-        fuel:
-          vehicle?.FuelType || null,
-        colour:
-          vehicle?.Colour || null,
-        year:
-          vehicle?.YearOfManufacture || null,
-        engineCapacity:
-          vehicle?.CylinderCapacity || null,
-        co2:
-          vehicle?.Co2Emissions || null,
-        taxStatus:
-          vehicle?.RoadTaxStatusDescription || null,
-        motStatus:
-          vehicle?.MotStatusDescription || null,
+        make: vehicle?.Make || 'Unknown',
+        model: vehicle?.Model || 'Unknown',
+        fuel: vehicle?.FuelType || null,
+        colour: vehicle?.Colour || null,
+        year: vehicle?.YearOfManufacture || null,
+        engineCapacity: vehicle?.CylinderCapacity || null,
+        co2: vehicle?.Co2Emissions || null,
+        taxStatus: vehicle?.RoadTaxStatusDescription || null,
+        motStatus: vehicle?.MotStatusDescription || null,
       },
+
       motHistory:
-        vehicle
-          ?.MotResultsSummary
-          ?.MotResults || [],
+        vehicle?.MotResultsSummary?.MotResults || [],
+
       keeperHistory:
-        vehicle
-          ?.KeeperHistory || [],
+        vehicle?.KeeperHistory || [],
+
       writeOff: 'unknown',
     };
- } catch (err: any) {
 
-  logger.error({
-    event: 'RCC_STANDARD_ERROR',
-    reg,
-    error: err.message,
-    response: err.response?.data || null,
-  });
-  throw new Error(
-    'Failed to load standard report'
-  );
- }
+  } catch (err: any) {
+
+    logger.error({
+      event: 'RCC_STANDARD_ERROR',
+      reg,
+      error: err.message,
+      response: err.response?.data || null,
+    });
+
+    throw new Error('Failed to load standard report');
+  }
 }
 private async consumeBundle(email: string): Promise<boolean> {
   try {
