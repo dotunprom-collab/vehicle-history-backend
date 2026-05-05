@@ -337,14 +337,14 @@ async handleWebhook(req: any, signature: string) {
           'guest';
 
         await this.createBundle(
-          email,
+          email || 'guest',
           Number(session.metadata.quantity || 1),
           session.metadata.tier || 'standard',
         );
 
         logger.info({
           event: 'BUNDLE_CREATED',
-          email,
+          email: email || 'guest',
           quantity: Number(session.metadata.quantity || 1),
           tier: session.metadata.tier,
         });
@@ -428,7 +428,7 @@ async handleWebhook(req: any, signature: string) {
     const existing =
       await this.bundleRepo.findOne({
         where: {
-          email,
+          email: email || 'guest',
           active: true,
         },
 
@@ -454,7 +454,7 @@ async handleWebhook(req: any, signature: string) {
     }
 
     const bundle: any = {
-      email,
+      email: email || 'guest',
       remaining:
         quantity,
       active: true,
