@@ -9,6 +9,7 @@ import { ConsumedSession } from './consumed-session.entity';
 import { EmailService } from '../common/email.service';
 import { VehicleService } from '../vehicle/vehicle.service';
 import { Inject, forwardRef } from '@nestjs/common';
+import { report } from 'process';
 
 @Injectable()
 export class PaymentService {
@@ -278,30 +279,10 @@ async handleWebhook(req: any, signature: string) {
 
   switch (event.type) {
 
-    case 'checkout.session.completed': {
+  case 'checkout.session.completed': {
+    const session =
+      event.data.object as Stripe.Checkout.Session;
 
-  const session =
-    event.data.object as Stripe.Checkout.Session;
-
-  const reg = session.metadata?.reg;
-  const tier = session.metadata?.tier || 'standard';
-
-  const email =
-    session.customer_details?.email ||
-    session.customer_email ||
-    'guest';
-
-  // 🚨 HARD VALIDATION
-  if (!reg) {
-    logger.error({
-      event: 'MISSING_REG_IN_METADATA',
-      sessionId: session.id,
-      metadata: session.metadata,
-    });
-    break;
-  }
-
-  // 🔁 Prevent duplicates
   const existing =
     await this.consumedSessionRepo.findOne({
       where: { sessionId: session.id },
@@ -315,6 +296,14 @@ async handleWebhook(req: any, signature: string) {
     break;
   }
 
+  const email =
+    session.customer_details?.email ||
+    session.customer_email ||
+    'guest';
+
+  const reg = session.metadata?.reg;
+  const tier = session.metadata?.tier || 'standard';
+
   logger.info({
     event: 'STRIPE_PAYMENT_SUCCESS',
     sessionId: session.id,
@@ -323,144 +312,95 @@ async handleWebhook(req: any, signature: string) {
     tier,
   });
 
-  // =========================
-  // 🎟️ BUNDLE HANDLING
-  // =========================
-  if (session.metadata?.type === 'bundle') {
-
-    await this.createBundle(
-      email,
-      Number(session.metadata.quantity || 1),
-      tier,
-    );
-
-    logger.info({
-      event: 'BUNDLE_CREATED',
-      email,
-      quantity: Number(session.metadata.quantity || 1),
-      tier,
-    });
+  if (!reg) {
+  logger.error({
+    event: 'MISSING_REG_IN_METADATA',
+    sessionId: session.id,
+    metadata: session.metadata,
+  });
+    break;
   }
+   // ✅ save session
+  await this.consumedSessionRepo.save({
+    sessionId: session.id,
+    email,
+    reg,
+  });
 
   // =========================
-  // 📊 GENERATE REPORT
+  // 🚀 GENERATE REPORT
   // =========================
-  let report: any;
 
-  try {
-    report =
-      await this.vehicleService.getFullReport(
-        reg,
-        session.id,
-      );
+  const report =
+  await this.vehicleService.getFullReport(
+    reg,
+    session.id
+  );
 
-    logger.info({
-      event: 'REPORT_GENERATED',
-      reg,
-      tier,
-    });
-
-  } catch (err: any) {
-
+  if ('error' in report) {
     logger.error({
       event: 'REPORT_GENERATION_FAILED',
-      error: err.message,
       reg,
+      error: report.error,
     });
-
-    Sentry.captureException(err);
+    break;
   }
 
   // =========================
   // 📄 GENERATE PDF
   // =========================
-  let pdfBuffer: Buffer | null = null;
 
-  try {
-    pdfBuffer =
-      await this.vehicleService.generatePdfBuffer(
-        reg,
-        report,
-        tier,
-      );
-
-  } catch (err: any) {
-    logger.error({
-      event: 'PDF_GENERATION_FAILED',
-      error: err.message,
+  const pdfBuffer =
+    await this.vehicleService.generatePdfBuffer(
       reg,
-    });
-  }
+      report,
+      tier
+    );
+
+  logger.info({
+    event: 'PDF_GENERATED',
+    reg,
+  });
 
   // =========================
   // 📧 SEND EMAIL
   // =========================
-  try {
-    if (pdfBuffer) {
-      await this.emailService.sendReport({
-        to: email,
-        reg,
-        tier,
-        pdfBuffer,
-      });
 
-      logger.info({
-        event: 'EMAIL_SENT',
-        email,
-        reg,
-      });
-    }
-
-  } catch (err: any) {
-
-    logger.error({
-      event: 'EMAIL_FAILED',
-      error: err.message,
-      email,
-    });
-
-    Sentry.captureException(err);
-  }
-
-  // =========================
-  // 💾 SAVE SESSION (LAST)
-  // =========================
-  await this.consumedSessionRepo.save({
-    sessionId: session.id,
-    reg,
+  await this.emailService.sendReportEmail(
     email,
+    reg,
+    pdfBuffer
+  );
+
+  logger.info({
+    event: 'EMAIL_SENT',
+    email,
+    reg,
   });
 
   break;
 }
-
     default:
       logger.info({
         event: 'STRIPE_UNHANDLED_EVENT',
         type: event.type,
       });
   }
-
   return { received: true };
 }
-
   // =========================
   // 📦 GET SESSION
   // =========================
-
   async getSession(
     sessionId: string
   ) {
-
     try {
-
       if (!this.stripe) {
         return {
           error:
             'Payments not configured',
         };
       }
-
       const session =
         await this.stripe
           .checkout
@@ -468,44 +408,35 @@ async handleWebhook(req: any, signature: string) {
           .retrieve(
             sessionId
           );
-
       return session;
-
     } catch (
       error: any
     ) {
-
       console.error(
         '🔥 SESSION ERROR:',
         error.message
       );
-
       Sentry.captureException(error);
-
       return {
         error:
           'Failed to retrieve session',
       };
     }
   }
-
   // =========================
   // 🎟️ CREATE / TOP-UP BUNDLE
   // =========================
-
   async createBundle(
     email: string,
     quantity: number,
     tier: string,
   ) {
-
     if (
       !email ||
       quantity <= 0
     ) {
       return;
     }
-
     const existing =
       await this.bundleRepo.findOne({
         where: {
@@ -533,7 +464,6 @@ async handleWebhook(req: any, signature: string) {
       );
       return;
     }
-
     const bundle: any = {
       email: email || 'guest',
       remaining:

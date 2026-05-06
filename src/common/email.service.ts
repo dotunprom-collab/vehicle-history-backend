@@ -38,4 +38,23 @@ export class EmailService {
       ],
     });
   }
+  async sendReportEmail(
+  email: string,
+  reg: string,
+  pdf: Buffer
+) {
+  // example with nodemailer
+
+  await this.transporter.sendMail({
+    to: email,
+    subject: `Your Vehicle Report (${reg})`,
+    text: 'Your report is attached.',
+    attachments: [
+      {
+        filename: `${reg}-report.pdf`,
+        content: pdf,
+      },
+    ],
+  });
+}
 }

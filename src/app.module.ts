@@ -63,7 +63,7 @@ import { AuthModule } from './auth/auth.module';
     VehicleService,
     PaymentService,
     RiskService,
-    EmailService, // ✅ THIS WAS MISSING (CRITICAL)
+    EmailService,
   ],
 })
 export class AppModule {}
