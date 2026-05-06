@@ -349,87 +349,91 @@ async handleWebhook(
       // 🚀 BACKGROUND PROCESSING
       // =====================================
 
-      (async () => {
+        (async () => {
 
-        try {
+  try {
 
-          logger.info({
-            event: 'STARTING_REPORT_GENERATION',
-            reg,
-          });
+    console.log('🚀 BACKGROUND TASK STARTED');
 
-          const report =
-            await this.vehicleService.getFullReport(
-              reg,
-              session.id,
-            );
+    logger.info({
+      event: 'STARTING_REPORT_GENERATION',
+      reg,
+    });
 
-          if ('error' in report) {
+    const report =
+      await this.vehicleService.getFullReport(
+        reg,
+        session.id,
+      );
 
-            logger.error({
-              event: 'REPORT_GENERATION_FAILED',
-              reg,
-              error: report.error,
-            });
+    console.log('✅ REPORT GENERATED');
 
-            return;
-          }
+    if ('error' in report) {
 
-          logger.info({
-            event: 'STARTING_PDF_GENERATION',
-            reg,
-          });
+      logger.error({
+        event: 'REPORT_GENERATION_FAILED',
+        reg,
+        error: report.error,
+      });
 
-          const pdfBuffer =
-            await this.vehicleService.generatePdfBuffer(
-              reg,
-              report,
-              tier,
-            );
+      return;
+    }
 
-          logger.info({
-            event: 'PDF_GENERATED',
-            reg,
-          });
+    console.log('🚀 GENERATING PDF');
 
-          logger.info({
-            event: 'STARTING_EMAIL_SEND',
-            email,
-            reg,
-          });
+    const pdfBuffer =
+      await this.vehicleService.generatePdfBuffer(
+        reg,
+        report,
+        tier,
+      );
 
-          await this.emailService.sendReportEmail(
-            email,
-            reg,
-            pdfBuffer,
-          );
+    console.log(
+      '✅ PDF GENERATED',
+      pdfBuffer?.length,
+    );
 
-          logger.info({
-            event: 'EMAIL_SENT',
-            email,
-            reg,
-          });
+    logger.info({
+      event: 'PDF_GENERATED',
+      reg,
+    });
 
-        } catch (err: any) {
+    console.log('🚀 SENDING EMAIL');
 
-          console.error(
-            'POST PAYMENT ERROR:',
-            err,
-          );
+    await this.emailService.sendReportEmail(
+      email,
+      reg,
+      pdfBuffer,
+    );
 
-          logger.error({
-            event:
-              'POST_PAYMENT_PROCESS_FAILED',
-            reg,
-            error:
-              err?.stack ||
-              err?.message ||
-              err,
-          });
+    console.log('✅ EMAIL SENT');
 
-          Sentry.captureException(err);
-        }
-      })();
+    logger.info({
+      event: 'EMAIL_SENT',
+      email,
+      reg,
+    });
+
+  } catch (err: any) {
+
+    console.error(
+      '❌ BACKGROUND TASK FAILED',
+      err,
+    );
+
+    logger.error({
+      event: 'POST_PAYMENT_PROCESS_FAILED',
+      reg,
+      error:
+        err?.stack ||
+        err?.message ||
+        JSON.stringify(err),
+    });
+
+    Sentry.captureException(err);
+  }
+
+})();
       break;
     }
     default:
