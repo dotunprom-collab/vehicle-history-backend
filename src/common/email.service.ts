@@ -1,13 +1,21 @@
 import * as nodemailer from 'nodemailer';
 export class EmailService {
 
-  private transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
+private transporter = nodemailer.createTransport({
+
+  service: 'gmail',
+
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+
+  tls: {
+    family: 4,
+    rejectUnauthorized: false,
+  },
+
+} as nodemailer.TransportOptions);
 
   async sendReport({
     to,
@@ -44,11 +52,18 @@ export class EmailService {
   pdf: Buffer
 ) {
   // example with nodemailer
+  console.log('EMAIL USER:', process.env.EMAIL_USER);
+  console.log('EMAIL PASS EXISTS:', !!process.env.EMAIL_PASS);
 
   await this.transporter.sendMail({
-    to: email,
-    subject: `Your Vehicle Report (${reg})`,
-    text: 'Your report is attached.',
+
+  from: `"CheapRegCheck" <${process.env.EMAIL_USER}>`,
+
+  to: email,
+
+  subject: `Your Vehicle Report (${reg})`,
+
+  text: 'Your report is attached.',
     attachments: [
       {
         filename: `${reg}-report.pdf`,
