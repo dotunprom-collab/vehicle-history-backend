@@ -47,6 +47,19 @@ async webhook(
   @Headers('stripe-signature')
   signature: string,
 ) {
+  console.log(
+  'RAW BODY EXISTS:',
+  !!req.rawBody
+);
+
+console.log(
+  'RAW BODY TYPE:',
+  typeof req.rawBody
+);
+console.log(
+  'SIGNATURE EXISTS:',
+  !!signature
+);
   return this.paymentService.handleWebhook(
     req.rawBody,
     signature,

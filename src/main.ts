@@ -9,9 +9,12 @@ import pinoHttp from 'pino-http';
 import * as Sentry from '@sentry/node';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-  rawBody: true,
-});
+  const app = await NestFactory.create(
+  AppModule,
+  {
+    rawBody: true,
+  },
+);
 
   // =========================
   // 🔥 INIT SENTRY FIRST
