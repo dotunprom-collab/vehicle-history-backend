@@ -173,24 +173,20 @@ export class PaymentService {
     // =========================
     // METADATA
     // =========================
-
     const metadata:
       Record<string, string> = {
-
       reg: String(reg),
       tier,
       type,
       quantity:
         String(quantity),
     };
-
     if (
       type === 'upgrade'
     ) {
       metadata.upgradeFrom =
         'standard';
     }
-
     logger.info({
       event: 'CHECKOUT_CREATED',
       reg,
@@ -198,50 +194,48 @@ export class PaymentService {
       type,
       quantity,
     });
-
     // =========================
     // CREATE SESSION
     // =========================
-
     const session =
-      await this.stripe
-        .checkout
-        .sessions
-        .create({
+  await this.stripe
+    .checkout
+    .sessions
+    .create({
+      payment_method_types: [
+        'card',
+      ],
 
-          payment_method_types: [
-            'card',
-          ],
-
-          mode: 'payment',
-
-          line_items: [
-            {
-              price_data: {
-
-                currency: 'gbp',
-
-                product_data: {
-                  name,
-                },
-                unit_amount:
-                  price,
-              },
-              quantity: 1,
+      mode: 'payment',
+      line_items: [
+        {
+          price_data: {
+            currency: 'gbp',
+            product_data: {
+              name,
             },
-          ],
+            unit_amount: price,
+          },
+          quantity: 1,
+        },
+      ],
 
-          success_url:'https://www.cheapregcheck.com/success.html?session_id={CHECKOUT_SESSION_ID}',
-          cancel_url:'https://www.cheapregcheck.com/cancel.html',
+      success_url:
+        'https://www.cheapregcheck.com/success.html?session_id={CHECKOUT_SESSION_ID}',
 
-          customer_email:
-            typeof email === 'string'
-              ? email
-              : undefined,
+      cancel_url:
+        'https://www.cheapregcheck.com/cancel.html',
 
-          metadata,
-        });
-    return session;
+      customer_email:
+        typeof email === 'string'
+          ? email
+          : undefined,
+      metadata: {
+        reg,
+        tier,
+      },
+    });
+return session;
   }
 
   // =========================
