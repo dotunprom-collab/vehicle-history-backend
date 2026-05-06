@@ -324,18 +324,26 @@ async handleWebhook(
   // 🚀 GENERATE REPORT
   // =========================
 
+  try {
+
+  // =========================
+  // 🚀 GENERATE REPORT
+  // =========================
+
   const report =
-  await this.vehicleService.getFullReport(
-    reg,
-    session.id
-  );
+    await this.vehicleService.getFullReport(
+      reg,
+      session.id,
+    );
 
   if ('error' in report) {
+
     logger.error({
       event: 'REPORT_GENERATION_FAILED',
       reg,
       error: report.error,
     });
+
     break;
   }
 
@@ -347,7 +355,7 @@ async handleWebhook(
     await this.vehicleService.generatePdfBuffer(
       reg,
       report,
-      tier
+      tier,
     );
 
   logger.info({
@@ -362,7 +370,7 @@ async handleWebhook(
   await this.emailService.sendReportEmail(
     email,
     reg,
-    pdfBuffer
+    pdfBuffer,
   );
 
   logger.info({
@@ -370,6 +378,16 @@ async handleWebhook(
     email,
     reg,
   });
+
+} catch (err: any) {
+
+  logger.error({
+    event: 'POST_PAYMENT_PROCESS_FAILED',
+    reg,
+    error: err?.message || err,
+  });
+
+}
 
   break;
 }

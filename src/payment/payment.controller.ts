@@ -55,10 +55,14 @@ async webhook(
     'SIGNATURE EXISTS:',
     !!signature
   );
-  return this.paymentService.handleWebhook(
-    req.body,
-    signature,
-  );
+  this.paymentService.handleWebhook(
+  req.body,
+  signature,
+);
+
+return {
+  received: true,
+};
 }
 
   // =========================
