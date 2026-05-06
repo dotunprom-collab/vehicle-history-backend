@@ -10,11 +10,8 @@ import * as Sentry from '@sentry/node';
 
 async function bootstrap() {
   const app = await NestFactory.create(
-  AppModule,
-  {
-    rawBody: true,
-  },
-);
+    AppModule,
+  );
 
   // =========================
   // 🔥 INIT SENTRY FIRST
