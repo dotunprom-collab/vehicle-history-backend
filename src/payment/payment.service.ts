@@ -242,6 +242,10 @@ return session;
   // 🔔 STRIPE WEBHOOK
   // =========================
 
+// =========================
+// 🔔 STRIPE WEBHOOK
+// =========================
+
 async handleWebhook(
   rawBody: Buffer,
   signature: string,
@@ -251,16 +255,17 @@ async handleWebhook(
     throw new Error('Stripe not initialized');
   }
 
-  const webhookSecret =
-    process.env.STRIPE_WEBHOOK_SECRET;
   let event: Stripe.Event;
 
   try {
-    event = this.stripe.webhooks.constructEvent(
-  rawBody,
-  signature,
-  process.env.STRIPE_WEBHOOK_SECRET!,
-);
+
+    event =
+      this.stripe.webhooks.constructEvent(
+        rawBody,
+        signature,
+        process.env.STRIPE_WEBHOOK_SECRET!,
+      );
+
   } catch (err: any) {
 
     logger.error({
@@ -274,129 +279,166 @@ async handleWebhook(
   }
 
   switch (event.type) {
-  case 'checkout.session.completed': {
-    const session =
-      event.data.object as Stripe.Checkout.Session;
-  const existing =
-    await this.consumedSessionRepo.findOne({
-      where: { sessionId: session.id },
-    });
-  if (existing) {
-    logger.warn({
-      event: 'STRIPE_DUPLICATE_WEBHOOK',
-      sessionId: session.id,
-    });
-    break;
-  }
 
-  const email =
-    session.customer_details?.email ||
-    session.customer_email ||
-    'guest';
+    case 'checkout.session.completed': {
 
-  const reg = session.metadata?.reg;
-  const tier = session.metadata?.tier || 'standard';
+      const session =
+        event.data.object as Stripe.Checkout.Session;
 
-  logger.info({
-    event: 'STRIPE_PAYMENT_SUCCESS',
-    sessionId: session.id,
-    reg,
-    email,
-    tier,
-  });
+      logger.info({
+        event: 'WEBHOOK_STARTED',
+        sessionId: session.id,
+      });
 
-  if (!reg) {
-  logger.error({
-    event: 'MISSING_REG_IN_METADATA',
-    sessionId: session.id,
-    metadata: session.metadata,
-  });
-    break;
-  }
-   // ✅ save session
-  await this.consumedSessionRepo.save({
-    sessionId: session.id,
-    email,
-    reg,
-  });
+      const existing =
+        await this.consumedSessionRepo.findOne({
+          where: {
+            sessionId: session.id,
+          },
+        });
 
-  // =========================
-  // 🚀 GENERATE REPORT
-  // =========================
+      if (existing) {
 
-  try {
+        logger.warn({
+          event: 'STRIPE_DUPLICATE_WEBHOOK',
+          sessionId: session.id,
+        });
 
-  // =========================
-  // 🚀 GENERATE REPORT
-  // =========================
+        break;
+      }
 
-  const report =
-    await this.vehicleService.getFullReport(
-      reg,
-      session.id,
-    );
+      const email =
+        session.customer_details?.email ||
+        session.customer_email ||
+        'guest';
 
-  if ('error' in report) {
+      const reg =
+        session.metadata?.reg;
 
-    logger.error({
-      event: 'REPORT_GENERATION_FAILED',
-      reg,
-      error: report.error,
-    });
+      const tier =
+        session.metadata?.tier ||
+        'standard';
 
-    break;
-  }
+      logger.info({
+        event: 'STRIPE_PAYMENT_SUCCESS',
+        sessionId: session.id,
+        reg,
+        email,
+        tier,
+      });
 
-  // =========================
-  // 📄 GENERATE PDF
-  // =========================
+      if (!reg) {
 
-  const pdfBuffer =
-    await this.vehicleService.generatePdfBuffer(
-      reg,
-      report,
-      tier,
-    );
+        logger.error({
+          event: 'MISSING_REG_IN_METADATA',
+          sessionId: session.id,
+          metadata: session.metadata,
+        });
 
-  logger.info({
-    event: 'PDF_GENERATED',
-    reg,
-  });
+        break;
+      }
 
-  // =========================
-  // 📧 SEND EMAIL
-  // =========================
+      // ✅ SAVE SESSION FIRST
+      await this.consumedSessionRepo.save({
+        sessionId: session.id,
+        email,
+        reg,
+      });
 
-  await this.emailService.sendReportEmail(
-    email,
-    reg,
-    pdfBuffer,
-  );
+      // =====================================
+      // 🚀 BACKGROUND PROCESSING
+      // =====================================
 
-  logger.info({
-    event: 'EMAIL_SENT',
-    email,
-    reg,
-  });
+      (async () => {
 
-} catch (err: any) {
+        try {
 
-  logger.error({
-    event: 'POST_PAYMENT_PROCESS_FAILED',
-    reg,
-    error: err?.message || err,
-  });
+          logger.info({
+            event: 'STARTING_REPORT_GENERATION',
+            reg,
+          });
 
-}
+          const report =
+            await this.vehicleService.getFullReport(
+              reg,
+              session.id,
+            );
 
-  break;
-}
+          if ('error' in report) {
+
+            logger.error({
+              event: 'REPORT_GENERATION_FAILED',
+              reg,
+              error: report.error,
+            });
+
+            return;
+          }
+
+          logger.info({
+            event: 'STARTING_PDF_GENERATION',
+            reg,
+          });
+
+          const pdfBuffer =
+            await this.vehicleService.generatePdfBuffer(
+              reg,
+              report,
+              tier,
+            );
+
+          logger.info({
+            event: 'PDF_GENERATED',
+            reg,
+          });
+
+          logger.info({
+            event: 'STARTING_EMAIL_SEND',
+            email,
+            reg,
+          });
+
+          await this.emailService.sendReportEmail(
+            email,
+            reg,
+            pdfBuffer,
+          );
+
+          logger.info({
+            event: 'EMAIL_SENT',
+            email,
+            reg,
+          });
+
+        } catch (err: any) {
+
+          console.error(
+            'POST PAYMENT ERROR:',
+            err,
+          );
+
+          logger.error({
+            event:
+              'POST_PAYMENT_PROCESS_FAILED',
+            reg,
+            error:
+              err?.stack ||
+              err?.message ||
+              err,
+          });
+
+          Sentry.captureException(err);
+        }
+      })();
+      break;
+    }
     default:
       logger.info({
         event: 'STRIPE_UNHANDLED_EVENT',
         type: event.type,
       });
   }
+
   return { received: true };
 }
   // =========================
