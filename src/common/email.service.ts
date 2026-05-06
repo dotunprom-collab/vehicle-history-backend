@@ -1,56 +1,10 @@
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 export class EmailService {
 
-  private transporter = nodemailer.createTransport({
-
-    host: 'smtp.gmail.com',
-
-    port: 587,
-
-    secure: false,
-
-    requireTLS: true,
-
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-
-    family: 4,
-
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-
-    tls: {
-      rejectUnauthorized: false,
-    },
-
-  } as nodemailer.TransportOptions);
-
-  constructor() {
-
-    this.transporter.verify((error, success) => {
-
-      if (error) {
-
-        console.error(
-          '❌ SMTP VERIFY FAILED',
-          error,
-        );
-
-      } else {
-
-        console.log(
-          '✅ SMTP SERVER READY',
-        );
-
-      }
-
-    });
-
-  }
+  private resend = new Resend(
+    process.env.RESEND_API_KEY,
+  );
 
   async sendReport({
     to,
@@ -66,13 +20,15 @@ export class EmailService {
 
     try {
 
-      await this.transporter.sendMail({
+      await this.resend.emails.send({
 
-        from: `"CheapRegCheck" <${process.env.EMAIL_USER}>`,
+        from:
+          'CheapRegCheck <onboarding@resend.dev>',
 
         to,
 
-        subject: `Your Vehicle Report (${reg})`,
+        subject:
+          `Your Vehicle Report (${reg})`,
 
         html: `
           <h2>Your report is ready</h2>
@@ -107,27 +63,20 @@ export class EmailService {
     pdf: Buffer,
   ) {
 
-    console.log(
-      'EMAIL USER:',
-      process.env.EMAIL_USER,
-    );
-
-    console.log(
-      'EMAIL PASS EXISTS:',
-      !!process.env.EMAIL_PASS,
-    );
-
     try {
 
-      await this.transporter.sendMail({
+      await this.resend.emails.send({
 
-        from: `"CheapRegCheck" <${process.env.EMAIL_USER}>`,
+        from:
+          'CheapRegCheck <onboarding@resend.dev>',
 
         to: email,
 
-        subject: `Your Vehicle Report (${reg})`,
+        subject:
+          `Your Vehicle Report (${reg})`,
 
-        text: 'Your report is attached.',
+        text:
+          'Your report is attached.',
 
         attachments: [
           {
