@@ -242,7 +242,10 @@ return session;
   // 🔔 STRIPE WEBHOOK
   // =========================
 
-async handleWebhook(req: any, signature: string) {
+async handleWebhook(
+  rawBody: Buffer,
+  signature: string,
+) {
 
   if (!this.stripe) {
     throw new Error('Stripe not initialized');
@@ -250,15 +253,14 @@ async handleWebhook(req: any, signature: string) {
 
   const webhookSecret =
     process.env.STRIPE_WEBHOOK_SECRET;
-
   let event: Stripe.Event;
 
   try {
     event = this.stripe.webhooks.constructEvent(
-      req.rawBody,
-      signature,
-      webhookSecret as string,
-    );
+  rawBody,
+  signature,
+  process.env.STRIPE_WEBHOOK_SECRET!,
+);
   } catch (err: any) {
 
     logger.error({
@@ -272,16 +274,13 @@ async handleWebhook(req: any, signature: string) {
   }
 
   switch (event.type) {
-
   case 'checkout.session.completed': {
     const session =
       event.data.object as Stripe.Checkout.Session;
-
   const existing =
     await this.consumedSessionRepo.findOne({
       where: { sessionId: session.id },
     });
-
   if (existing) {
     logger.warn({
       event: 'STRIPE_DUPLICATE_WEBHOOK',

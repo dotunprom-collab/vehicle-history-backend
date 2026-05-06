@@ -43,13 +43,12 @@ async checkout(@Body() body: any) {
 @Post('webhook')
 @HttpCode(200)
 async webhook(
-  @Req() req: Request,
+  @Req() req: any,
   @Headers('stripe-signature')
   signature: string,
 ) {
-
   return this.paymentService.handleWebhook(
-    req,
+    req.rawBody,
     signature,
   );
 }
