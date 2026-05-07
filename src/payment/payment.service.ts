@@ -475,6 +475,57 @@ async handleWebhook(
       };
     }
   }
+
+  // ─── UPGRADE CHECKOUT (Standard → Premium for £3) ──────────────
+// Called by GET /payment/upgrade-link after token verification.
+// Creates a Stripe checkout session at £3 with proper metadata.
+async createUpgradeCheckout(reg: string, email: string): Promise<string> {
+  if (!this.stripe) {
+    throw new Error('Stripe not initialized');
+  }
+
+  const FRONTEND_URL =
+    process.env.FRONTEND_URL || 'https://cheapregcheck.com';
+
+  const session = await this.stripe.checkout.sessions.create({
+    mode: 'payment',
+    payment_method_types: ['card'],
+    customer_email: email,
+    line_items: [
+      {
+        price_data: {
+          currency: 'gbp',
+          product_data: {
+            name: `Premium Upgrade — ${reg.toUpperCase()}`,
+            description: 'Unlock finance, theft, and write-off checks',
+          },
+          unit_amount: 300, // £3.00 in pence
+        },
+        quantity: 1,
+      },
+    ],
+    metadata: {
+      reg: reg.toUpperCase().trim(),
+      tier: 'premium',
+      type: 'upgrade',
+      source: 'email_link',
+    },
+    success_url: `${FRONTEND_URL}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${FRONTEND_URL}/index.html`,
+  });
+
+  if (!session.url) {
+    throw new Error('Stripe did not return a checkout URL');
+  }
+
+  console.log('[UPGRADE] Created upgrade checkout', {
+    reg,
+    email,
+    sessionId: session.id,
+  });
+
+  return session.url;
+}
   // =========================
   // 🎟️ CREATE / TOP-UP BUNDLE
   // =========================

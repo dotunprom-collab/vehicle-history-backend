@@ -1,7 +1,13 @@
 import { Resend } from 'resend';
 
+import { Injectable } from '@nestjs/common';
+import { AuthService } from '../auth/auth.service';
+
+@Injectable()
 export class EmailService {
   private resend = new Resend(process.env.RESEND_API_KEY);
+
+  constructor(private readonly authService: AuthService) {}
 
   // Tier-aware report email.
   // Standard buyers get a £3 upgrade upsell block. Premium buyers don't.
@@ -25,12 +31,23 @@ export class EmailService {
         ? `Your ${reg} report is ready — finance & theft checks still hidden`
         : `Your ${reg} Premium report is ready`;
 
-      // ── Upgrade link (Standard only) ─────────────────────────
-      const FRONTEND_URL =
-        process.env.FRONTEND_URL || 'https://cheapregcheck.com';
-      const upgradeUrl = `${FRONTEND_URL}/success.html?reg=${encodeURIComponent(
-        reg,
-      )}&action=upgrade`;
+    // ── Upgrade link (Standard only) ─────────────────────────
+// Build a signed JWT proving this email purchased Standard for this reg.
+// Link expires in 7 days. The /payment/upgrade-link endpoint verifies it
+// and redirects directly to a £3 Stripe checkout.
+const BACKEND_URL =
+  process.env.BACKEND_URL ||
+  'https://vehicle-history-backend-production.up.railway.app';
+
+let upgradeUrl = '';
+if (isStandard) {
+  const upgradeToken = this.authService.generateUpgradeToken({
+    reg,
+    email: to,
+    fromTier: 'standard',
+  });
+  upgradeUrl = `${BACKEND_URL}/payment/upgrade-link?token=${upgradeToken}`;
+}
 
       // ── Conditional upsell HTML block ────────────────────────
       const upsellBlock = isStandard
