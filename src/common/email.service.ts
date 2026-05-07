@@ -76,7 +76,7 @@ export class EmailService {
           `Your Vehicle Report (${reg})`,
 
         text:
-          'Your report is attached.',
+          'Your vehicle report is attached.',
 
         attachments: [
           {
