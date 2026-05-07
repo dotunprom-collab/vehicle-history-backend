@@ -22,8 +22,7 @@ export class EmailService {
 
       await this.resend.emails.send({
 
-        from:
-          'CheapRegCheck <onboarding@resend.dev>',
+        from: 'CheapRegCheck <reports@cheapregcheck.com>',
 
         to,
 
@@ -67,8 +66,7 @@ export class EmailService {
 
       await this.resend.emails.send({
 
-        from:
-          'CheapRegCheck <onboarding@resend.dev>',
+        from: 'CheapRegCheck <reports@cheapregcheck.com>',
 
         to: email,
 
