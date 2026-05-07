@@ -107,7 +107,6 @@ export class PaymentService {
 
     let name =
       'Standard Vehicle Check';
-
     if (
       type === 'upgrade'
     ) {
@@ -274,14 +273,11 @@ async handleWebhook(
     });
 
     Sentry.captureException(err);
-
     throw new Error('Invalid webhook signature');
   }
 
   switch (event.type) {
-
     case 'checkout.session.completed': {
-
       const session =
         event.data.object as Stripe.Checkout.Session;
 
@@ -399,13 +395,12 @@ async handleWebhook(
     });
 
     console.log('🚀 SENDING EMAIL');
-
-    await this.emailService.sendReportEmail(
-      email,
-      reg,
-      pdfBuffer,
-    );
-
+    await this.emailService.sendReport({
+      to: email,
+      reg: reg,
+      tier: tier,
+      pdfBuffer: pdfBuffer,
+    });
     console.log('✅ EMAIL SENT');
 
     logger.info({

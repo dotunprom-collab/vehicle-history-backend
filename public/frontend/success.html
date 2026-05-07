@@ -2727,6 +2727,27 @@ async function upgradeToPremium() {
 }
 
 loadReport();
+
+// Auto-trigger upgrade flow if landing from email upgrade link
+(function autoTriggerFromEmail() {
+  const params = new URLSearchParams(window.location.search);
+  const action = params.get('action');
+  const linkReg = params.get('reg');
+
+  if (action === 'upgrade' && linkReg) {
+    setTimeout(function() {
+      const onScreenReg = (window.globalReg || '').toUpperCase().trim();
+      const fromLink = linkReg.toUpperCase().trim();
+
+      if (onScreenReg === fromLink) {
+        console.log('[CRC] Auto-triggering upgrade from email link');
+        upgradeToPremium();
+      } else {
+        console.warn('[CRC] Email upgrade link mismatch — not auto-triggering');
+      }
+    }, 1500);
+  }
+})();
 </script>
 <script src="/partials/nav-loader.js" defer></script>
 </body>
