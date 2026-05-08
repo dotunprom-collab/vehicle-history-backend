@@ -11,21 +11,22 @@ export class EmailService {
 
   // Tier-aware report email.
   // Standard buyers get a £3 upgrade upsell block. Premium buyers don't.
-  async sendReport({
-    to,
-    reg,
-    tier,
-    pdfBuffer,
-  }: {
-    to: string;
-    reg: string;
-    tier: string;             // 'standard' | 'premium' | 'free'
-    pdfBuffer: Buffer;
-  }) {
-    try {
-      // ── Tier-aware vars ──────────────────────────────────────
-      const isStandard = tier === 'standard';
-      const tierLabel = isStandard ? 'STANDARD-TIER' : 'PREMIUM-TIER';
+ async sendReport({
+  to,
+  reg,
+  tier,
+  pdfBuffer,
+}: {
+  to: string;
+  reg: string;
+  tier: string;
+  pdfBuffer: Buffer;
+}) {
+  console.log('[EMAIL DEBUG] sendReport called with:', { to, reg, tier, hasBuffer: !!pdfBuffer });
+  try {
+    // ── Tier-aware vars ──────────────────────────────────────
+    const isStandard = tier === 'standard';
+    const tierLabel = isStandard ? 'STANDARD-TIER' : 'PREMIUM-TIER';
 
       const subject = isStandard
         ? `Your ${reg} report is ready — finance & theft checks still hidden`
@@ -40,13 +41,23 @@ const BACKEND_URL =
   'https://vehicle-history-backend-production.up.railway.app';
 
 let upgradeUrl = '';
+console.log('[EMAIL DEBUG] tier received:', tier, '| isStandard:', isStandard);
+
 if (isStandard) {
-  const upgradeToken = this.authService.generateUpgradeToken({
-    reg,
-    email: to,
-    fromTier: 'standard',
-  });
-  upgradeUrl = `${BACKEND_URL}/payment/upgrade-link?token=${upgradeToken}`;
+  try {
+    const upgradeToken = this.authService.generateUpgradeToken({
+      reg,
+      email: to,
+      fromTier: 'standard',
+    });
+    console.log('[EMAIL DEBUG] token generated, length:', upgradeToken?.length || 0);
+    upgradeUrl = `${BACKEND_URL}/payment/upgrade-link?token=${upgradeToken}`;
+    console.log('[EMAIL DEBUG] upgradeUrl built:', upgradeUrl.substring(0, 100) + '...');
+  } catch (err: any) {
+    console.error('[EMAIL DEBUG] FAILED to generate upgrade token:', err.message, err.stack);
+  }
+} else {
+  console.log('[EMAIL DEBUG] not standard tier, skipping upgrade link');
 }
 
       // ── Conditional upsell HTML block ────────────────────────
