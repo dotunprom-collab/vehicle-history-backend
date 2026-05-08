@@ -987,20 +987,32 @@ async generatePdfBuffer(
     // ============================================================
     // PRIMITIVES
     // ============================================================
+    const breakLigatures = (s: string): string => {
+      if (s == null) return '';
+      // U+200C ZERO WIDTH NON-JOINER between problem pairs
+      return String(s)
+        .replace(/fi/g, 'f\u200Ci')
+        .replace(/fl/g, 'f\u200Cl')
+        .replace(/ffi/g, 'f\u200Cf\u200Ci')
+        .replace(/ffl/g, 'f\u200Cf\u200Cl')
+        .replace(/ff/g, 'f\u200Cf');
+    };
+
     const text = (str: string, x: number, y: number, opts: any = {}) => {
       const textOpts: any = {
         width: opts.width || PAGE.contentWidth,
         align: opts.align || 'left',
         ...opts,
-        features: ['-liga', '-clig', '-dlig', '-hlig'],  // hard-disable all ligature substitutions
+        features: [],
       };
       // remove options that aren't valid for pdfkit text()
       delete textOpts.font;
       delete textOpts.size;
       delete textOpts.color;
       doc.font(opts.font || F.sans).fontSize(opts.size || 11).fillColor(opts.color || C.text)
-        .text(str, x, y, textOpts);
+        .text(breakLigatures(str), x, y, textOpts);
     };
+    
     const fillRect = (x: number, y: number, w: number, h: number, color: string) => {
       doc.rect(x, y, w, h).fillColor(color).fill();
     };
