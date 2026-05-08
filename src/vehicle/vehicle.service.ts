@@ -1929,6 +1929,15 @@ async generatePdfBuffer(
     const isFree = tier === 'free';
     const v = data?.vehicle || {};
 
+    // TEMP DEBUG — remove after diagnosis
+console.log('[PDF DEBUG] tier received:', tier);
+console.log('[PDF DEBUG] vehicle keys:', Object.keys(v));
+console.log('[PDF DEBUG] motHistory length:', (data?.motHistory || []).length);
+console.log('[PDF DEBUG] motHistory sample:', JSON.stringify((data?.motHistory || [])[0], null, 2));
+console.log('[PDF DEBUG] keeperHistory length:', (data?.keeperHistory || []).length);
+console.log('[PDF DEBUG] keeperHistory sample:', JSON.stringify((data?.keeperHistory || [])[0], null, 2));
+console.log('[PDF DEBUG] full data keys:', Object.keys(data || {}));
+
     const motValid = String(v.motStatus || '').toLowerCase().includes('valid');
     const taxValid = String(v.taxStatus || '').toLowerCase().includes('taxed');
 
