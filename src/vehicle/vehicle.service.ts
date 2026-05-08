@@ -699,7 +699,7 @@ async generatePdfBuffer(
     };
 
     // ============================================================
-    // FONTS — DM Sans + Instrument Serif (matches frontend)
+    // FONTS — DM Sans + Instrument Serif
     // ============================================================
     const fontDir = path.join(process.cwd(), 'assets', 'fonts');
     const fSansR = path.join(fontDir, 'DMSans-Regular.ttf');
@@ -740,7 +740,7 @@ async generatePdfBuffer(
     const motValid = String(v.motStatus || '').toLowerCase().includes('valid');
     const taxValid = String(v.taxStatus || '').toLowerCase().includes('taxed');
 
-    // === RISK COMPUTATION (Phase 1B logic) ===
+    // === RISK COMPUTATION ===
     let riskScore = 0;
     const issues: string[] = [];
     const positives: string[] = [];
@@ -843,25 +843,32 @@ async generatePdfBuffer(
         return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
       } catch { return 'Not available'; }
     };
+    // Strip "cc" suffix if present, for engine capacity
+    const cleanCc = (val: any): string => {
+      if (!val) return '';
+      return String(val).replace(/\s*cc\s*$/i, '').trim();
+    };
+    // Status label primitive — replaces broken emoji glyphs
+    const statusLabel = (state: string): string => {
+      if (state === 'ok') return 'OK';
+      if (state === 'warn') return 'CHECK';
+      if (state === 'fail') return 'FAIL';
+      if (state === 'locked') return 'LOCKED';
+      return 'N/A';
+    };
 
     // ============================================================
     // PAGE 1 — COVER
     // ============================================================
-    // Soft background tint at bottom (matches frontend hero feel)
     fillRect(0, 0, PAGE.width, PAGE.height, C.paper);
     fillRect(0, 480, PAGE.width, PAGE.height - 480, C.bg);
 
-    // Logo (if exists)
+    // Logo
     const logoPath = path.join(process.cwd(), 'assets', 'logo-light.png');
     if (fs.existsSync(logoPath)) {
       try { doc.image(logoPath, PAGE.width / 2 - 60, 70, { width: 120 }); } catch {}
     } else {
-      // Wordmark fallback
       text('CheapReg', 0, 90, { font: F.serif, size: 36, color: C.text, width: PAGE.width, align: 'center' });
-      doc.font(F.serif).fontSize(36).fillColor(C.green);
-      const w1 = doc.widthOfString('CheapReg');
-      const w2 = doc.widthOfString('Check');
-      text('Check', (PAGE.width / 2) + w1 / 2 - w2 / 2 + 8, 90, { font: F.serif, size: 36, color: C.green, align: 'left', width: 200 });
     }
 
     // Tier pill
@@ -874,8 +881,8 @@ async generatePdfBuffer(
     roundedRect(pillX, 220, pillW, 22, 11, pillBg);
     text(pillTxt, pillX, 226, { font: F.sansBold, size: 10, color: pillFg, width: pillW, align: 'center' });
 
-    // Headline — Instrument Serif italic accent like frontend
-    text('Your vehicle\'s', 0, 270, { font: F.serif, size: 38, color: C.text, width: PAGE.width, align: 'center' });
+    // Headline
+    text("Your vehicle's", 0, 270, { font: F.serif, size: 38, color: C.text, width: PAGE.width, align: 'center' });
     text('complete history', 0, 312, { font: F.serifIt, size: 44, color: C.green, width: PAGE.width, align: 'center' });
 
     // Yellow plate graphic
@@ -885,7 +892,6 @@ async generatePdfBuffer(
     const plateY = 380;
     roundedRect(plateX, plateY, plateW, plateH, 10, C.plate, C.text, 2);
     fillRect(plateX, plateY, 36, plateH, C.plateBlue);
-    // Round only left side of GB strip
     roundedRect(plateX, plateY, 36, plateH, 10, C.plateBlue);
     fillRect(plateX + 18, plateY, 18, plateH, C.plateBlue);
     text('GB', plateX, plateY + 24, { font: F.sansBold, size: 12, color: C.paper, width: 36, align: 'center' });
@@ -904,17 +910,25 @@ async generatePdfBuffer(
     const vCardY = 540;
     roundedRect(vCardX, vCardY, vCardW, vCardH, 18, C.card, C.border);
 
-    // Risk badge inside card
-    const badgeW = 88;
+    const badgeW = 100;
     const badgeH = 26;
     const badgeX = vCardX + (vCardW - badgeW) / 2;
     roundedRect(badgeX, vCardY + 20, badgeW, badgeH, 13, riskSoft);
     text(riskLevel + ' RISK', badgeX, vCardY + 27, { font: F.sansBold, size: 10, color: riskFg, width: badgeW, align: 'center', characterSpacing: 1 });
-
     text(verdict, vCardX, vCardY + 60, { font: F.sansMed, size: 14, color: C.text, width: vCardW, align: 'center' });
     text(`Risk score: ${riskScore} / 100`, vCardX, vCardY + 88, { font: F.sans, size: 11, color: C.sub, width: vCardW, align: 'center' });
 
-    // Footer of cover
+    // Cover teaser line — what's inside this report
+    const teaserBits: string[] = [];
+    teaserBits.push(`${motTests.length} MOT record${motTests.length === 1 ? '' : 's'}`);
+    if (isPremium) {
+      const keepers = Array.isArray(data?.keeperHistory) ? data.keeperHistory : [];
+      if (keepers.length > 0) teaserBits.push(`${keepers.length} keeper${keepers.length === 1 ? '' : 's'}`);
+    }
+    teaserBits.push('6 pages');
+    text(teaserBits.join('  ·  '), 0, 690, { font: F.sans, size: 11, color: C.sub, width: PAGE.width, align: 'center' });
+
+    // Footer
     text(`Generated on ${genDate}`, 0, 760, { font: F.sans, size: 10, color: C.sub2, width: PAGE.width, align: 'center' });
     text('cheapregcheck.com', 0, 778, { font: F.sansMed, size: 11, color: C.green, width: PAGE.width, align: 'center' });
 
@@ -924,7 +938,6 @@ async generatePdfBuffer(
     const drawPageHeader = () => {
       fillRect(0, 0, PAGE.width, 50, C.paper);
       doc.strokeColor(C.div).lineWidth(0.5).moveTo(0, 50).lineTo(PAGE.width, 50).stroke();
-
       if (fs.existsSync(logoPath)) {
         try { doc.image(logoPath, PAGE.margin, 14, { width: 70 }); } catch {}
       } else {
@@ -951,38 +964,54 @@ async generatePdfBuffer(
     text('Quick summary of all key checks for this vehicle', PAGE.margin, cursorY + 38, { font: F.sans, size: 11, color: C.sub, width: PAGE.contentWidth });
     cursorY += 80;
 
-    // Risk gauge card — rounded, branded
-    const gCardH = 160;
+    // Risk gauge card — repositioned with hero number on left, gauge full-width on right
+    const gCardH = 180;
     roundedRect(PAGE.margin, cursorY, PAGE.contentWidth, gCardH, 18, C.card, C.border);
-    text('Overall risk assessment', PAGE.margin + 22, cursorY + 20, { font: F.sansMed, size: 12, color: C.text });
 
-    // Gauge bar
+    text('Overall risk assessment', PAGE.margin + 22, cursorY + 20, { font: F.sansMed, size: 11, color: C.sub });
+
+    // HERO NUMBER on the left
+    text(String(riskScore), PAGE.margin + 22, cursorY + 44, { font: F.serif, size: 64, color: riskFg });
+    // "/100" and risk level next to it
+    text('/ 100', PAGE.margin + 22 + 80, cursorY + 80, { font: F.sansMed, size: 14, color: C.sub });
+
+    // Risk level pill below number
+    const lvlBadgeW = 90;
+    const lvlBadgeH = 24;
+    roundedRect(PAGE.margin + 22, cursorY + 122, lvlBadgeW, lvlBadgeH, 12, riskSoft);
+    text(riskLevel + ' RISK', PAGE.margin + 22, cursorY + 128, { font: F.sansBold, size: 10, color: riskFg, width: lvlBadgeW, align: 'center', characterSpacing: 1 });
+
+    // Verdict text
+    text(verdict, PAGE.margin + 22, cursorY + 152, { font: F.sansMed, size: 11, color: C.text, width: PAGE.contentWidth - 44 });
+
+    // GAUGE on the right — taller, more visual
+    const gX = PAGE.margin + 200;
     const gY = cursorY + 60;
-    const gX = PAGE.margin + 22;
-    const gW = PAGE.contentWidth - 44;
-    roundedRect(gX, gY, gW, 14, 7, C.surface);
-    // Filled portion
-    const fillW = (gW - 2) * (riskScore / 100);
+    const gW = PAGE.contentWidth - 220;
+    const gH = 22;
+    // Background bar
+    roundedRect(gX, gY, gW, gH, 11, C.surface);
+    // Filled portion with gradient effect (use main risk colour)
+    const fillPct = riskScore / 100;
+    const fillW = (gW - 4) * fillPct;
     if (fillW > 4) {
-      roundedRect(gX + 1, gY + 1, fillW, 12, 6, riskFg);
+      roundedRect(gX + 2, gY + 2, fillW, gH - 4, 9, riskFg);
     }
     // Indicator marker
     const indX = gX + (gW * riskScore) / 100;
-    doc.polygon([indX - 5, gY - 3], [indX + 5, gY - 3], [indX, gY + 5]).fillColor(riskFg).fill();
-
-    text('0', gX, gY + 22, { font: F.sans, size: 9, color: C.sub2, width: 30 });
-    text('LOW', gX + gW * 0.15 - 15, gY + 22, { font: F.sansMed, size: 9, color: C.green, width: 30, align: 'center' });
-    text('MED', gX + gW * 0.45 - 15, gY + 22, { font: F.sansMed, size: 9, color: C.amber, width: 30, align: 'center' });
-    text('HIGH', gX + gW * 0.8 - 15, gY + 22, { font: F.sansMed, size: 9, color: C.red, width: 30, align: 'center' });
-    text('100', gX + gW - 30, gY + 22, { font: F.sans, size: 9, color: C.sub2, width: 30, align: 'right' });
-
-    text(String(riskScore), PAGE.margin + 22, cursorY + 110, { font: F.serif, size: 36, color: riskFg });
-    text('/ 100', PAGE.margin + 90, cursorY + 124, { font: F.sans, size: 12, color: C.sub });
-    text(verdict, PAGE.margin + 200, cursorY + 120, { font: F.sansMed, size: 13, color: C.text, width: PAGE.contentWidth - 220, align: 'right' });
+    if (riskScore > 0) {
+      doc.polygon([indX - 6, gY - 5], [indX + 6, gY - 5], [indX, gY + 3]).fillColor(riskFg).fill();
+    }
+    // Scale labels below
+    text('0', gX, gY + 32, { font: F.sans, size: 9, color: C.sub2, width: 30 });
+    text('LOW', gX + gW * 0.15 - 15, gY + 32, { font: F.sansMed, size: 9, color: C.green, width: 30, align: 'center' });
+    text('MEDIUM', gX + gW * 0.45 - 25, gY + 32, { font: F.sansMed, size: 9, color: C.amber, width: 50, align: 'center' });
+    text('HIGH', gX + gW * 0.8 - 15, gY + 32, { font: F.sansMed, size: 9, color: C.red, width: 30, align: 'center' });
+    text('100', gX + gW - 30, gY + 32, { font: F.sans, size: 9, color: C.sub2, width: 30, align: 'right' });
 
     cursorY += gCardH + 20;
 
-    // Status grid 2x3
+    // Status grid 2x3 with TEXT LABELS instead of broken emoji
     const checks = [
       { label: 'Finance', state: isPremium ? (data?.finance === 'outstanding' ? 'warn' : data?.finance === 'clear' ? 'ok' : 'unknown') : 'locked',
         msg: isPremium ? (data?.finance === 'outstanding' ? 'Outstanding' : data?.finance === 'clear' ? 'Clear' : 'Unknown') : 'Premium only' },
@@ -999,10 +1028,9 @@ async generatePdfBuffer(
       : s === 'warn' ? { fg: C.red, bg: C.redPale }
       : s === 'locked' ? { fg: C.sub, bg: C.surface }
       : { fg: C.amber, bg: C.amberPale };
-    const stateSymbol = (s: string) => s === 'ok' ? '✓' : s === 'warn' ? '!' : s === 'locked' ? '🔒' : '?';
 
     const cardW = (PAGE.contentWidth - 20) / 3;
-    const cardH = 100;
+    const cardH = 96;
     checks.forEach((c, i) => {
       const col = i % 3;
       const rowI = Math.floor(i / 3);
@@ -1010,15 +1038,20 @@ async generatePdfBuffer(
       const y = cursorY + rowI * (cardH + 10);
       const cl = stateColor(c.state);
       roundedRect(x, y, cardW, cardH, 14, C.card, C.border);
-      // Status circle
-      roundedRect(x + 16, y + 16, 32, 32, 16, cl.bg);
-      text(stateSymbol(c.state), x + 16, y + 22, { font: F.sansBold, size: 14, color: cl.fg, width: 32, align: 'center' });
-      text(c.label, x + 16, y + 58, { font: F.sansMed, size: 10, color: C.sub, width: cardW - 32 });
-      text(c.msg, x + 16, y + 74, { font: F.sansBold, size: 12, color: C.text, width: cardW - 32 });
+
+      // Status pill (text instead of emoji)
+      doc.font(F.sansBold).fontSize(8);
+      const sLabel = statusLabel(c.state);
+      const sW = doc.widthOfString(sLabel) + 16;
+      roundedRect(x + 16, y + 16, sW, 20, 10, cl.bg);
+      text(sLabel, x + 16, y + 21, { font: F.sansBold, size: 8, color: cl.fg, width: sW, align: 'center', characterSpacing: 1 });
+
+      text(c.label, x + 16, y + 50, { font: F.sansMed, size: 10, color: C.sub, width: cardW - 32 });
+      text(c.msg, x + 16, y + 66, { font: F.sansBold, size: 12, color: C.text, width: cardW - 32 });
     });
     cursorY += cardH * 2 + 30;
 
-    // Issues / positives summary
+    // Issues / positives summary — bullet character replaced with simple text
     if (issues.length > 0 || positives.length > 0) {
       const sumH = Math.max(positives.length, issues.length) * 18 + 50;
       roundedRect(PAGE.margin, cursorY, PAGE.contentWidth, sumH, 14, C.surface);
@@ -1027,14 +1060,18 @@ async generatePdfBuffer(
       if (positives.length > 0) {
         text('What looks good', PAGE.margin + 16, cursorY + 16, { font: F.sansMed, size: 11, color: C.green, width: colW });
         positives.forEach((p, i) => {
-          text(`✓ ${p}`, PAGE.margin + 16, cursorY + 38 + i * 18, { font: F.sans, size: 10, color: C.text, width: colW - 16 });
+          // Green dot
+          doc.circle(PAGE.margin + 22, cursorY + 44 + i * 18, 3).fillColor(C.green).fill();
+          text(p, PAGE.margin + 32, cursorY + 38 + i * 18, { font: F.sans, size: 10, color: C.text, width: colW - 24 });
         });
       }
       if (issues.length > 0) {
         const ix = PAGE.margin + colW + 16;
         text('Things to check', ix, cursorY + 16, { font: F.sansMed, size: 11, color: C.red, width: colW });
         issues.forEach((p, i) => {
-          text(`! ${p}`, ix, cursorY + 38 + i * 18, { font: F.sans, size: 10, color: C.text, width: colW - 16 });
+          // Red dot
+          doc.circle(ix + 6, cursorY + 44 + i * 18, 3).fillColor(C.red).fill();
+          text(p, ix + 16, cursorY + 38 + i * 18, { font: F.sans, size: 10, color: C.text, width: colW - 24 });
         });
       }
     }
@@ -1042,7 +1079,7 @@ async generatePdfBuffer(
     drawPageFooter(2, 6);
 
     // ============================================================
-    // PAGE 3 — VEHICLE DETAILS
+    // PAGE 3 — VEHICLE DETAILS (expanded for both tiers)
     // ============================================================
     doc.addPage();
     drawPageHeader();
@@ -1051,6 +1088,7 @@ async generatePdfBuffer(
     text('Vehicle details', PAGE.margin, cursorY, { font: F.serif, size: 32, color: C.text, width: PAGE.contentWidth });
     cursorY += 50;
 
+    // Build specs — more useful fields for Standard tier (using only data already present)
     const specs: [string, any][] = [
       ['Registration', v.reg || reg],
       ['Make', v.make],
@@ -1058,9 +1096,24 @@ async generatePdfBuffer(
       ['Year', v.year],
       ['Fuel type', v.fuel],
       ['Colour', v.colour],
-      ['Engine', v.engineCapacity ? `${v.engineCapacity} cc` : null],
-      ['CO₂ emissions', v.co2 ? `${v.co2} g/km` : null],
+      ['Engine', v.engineCapacity ? `${cleanCc(v.engineCapacity)} cc` : null],
+      ['CO2 emissions', v.co2 ? `${v.co2} g/km` : null],
     ];
+
+    // Add tax/MOT status for ALL tiers (data already there)
+    if (v.motStatus) {
+      specs.push(['MOT status', v.motStatus]);
+    }
+    if (v.taxStatus) {
+      specs.push(['Tax status', v.taxStatus]);
+    }
+    if (v.motDaysLeft !== undefined && v.motDaysLeft !== null) {
+      specs.push(['MOT days remaining', String(v.motDaysLeft)]);
+    }
+    if (v.taxDaysLeft !== undefined && v.taxDaysLeft !== null) {
+      specs.push(['Tax days remaining', String(v.taxDaysLeft)]);
+    }
+
     if (isPremium) {
       specs.push(
         ['Body style', v.bodyStyle],
@@ -1085,7 +1138,7 @@ async generatePdfBuffer(
     drawPageFooter(3, 6);
 
     // ============================================================
-    // PAGE 4 — MOT HISTORY (Phase 1A field fixes applied)
+    // PAGE 4 — MOT HISTORY
     // ============================================================
     doc.addPage();
     drawPageHeader();
@@ -1094,8 +1147,8 @@ async generatePdfBuffer(
     text('MOT history', PAGE.margin, cursorY, { font: F.serif, size: 32, color: C.text, width: PAGE.contentWidth });
     cursorY += 50;
 
-    const motHistory = Array.isArray(data?.motHistory) ? data.motHistory : [];
-    const motSorted = [...motHistory].sort((a: any, b: any) => new Date(b.DateOfTest || 0).getTime() - new Date(a.DateOfTest || 0).getTime());
+    const motHistoryRaw = Array.isArray(data?.motHistory) ? data.motHistory : [];
+    const motSorted = [...motHistoryRaw].sort((a: any, b: any) => new Date(b.DateOfTest || 0).getTime() - new Date(a.DateOfTest || 0).getTime());
     const motShow = isPremium ? motSorted.slice(0, 10) : motSorted.slice(0, 3);
 
     if (motShow.length === 0) {
@@ -1110,19 +1163,15 @@ async generatePdfBuffer(
         const itemH = 64;
         roundedRect(PAGE.margin, cursorY, PAGE.contentWidth, itemH, 14, C.card, C.border);
 
-        // Status pill
         roundedRect(PAGE.margin + 16, cursorY + 18, 60, 24, 12, c.bg);
         text(passed ? 'PASS' : 'FAIL', PAGE.margin + 16, cursorY + 25, { font: F.sansBold, size: 10, color: c.fg, width: 60, align: 'center', characterSpacing: 1 });
 
-        // Date
         text(fmtDate(mot?.DateOfTest), PAGE.margin + 96, cursorY + 14, { font: F.sansMed, size: 12, color: C.text, width: PAGE.contentWidth - 120 });
 
-        // Mileage
         const odo = mot?.OdometerModel?.OdometerReading;
         const odoStr = odo ? `${Number(odo).toLocaleString('en-GB')} miles` : 'Not recorded';
-        text(odoStr, PAGE.margin + 96, cursorY + 34, { font: F.sans, size: 10, color: C.sub, width: PAGE.contentWidth - 120 });
+        text(odoStr, PAGE.margin + 96, cursorY + 34, { font: F.sans, size: 10, color: C.sub, width: 200 });
 
-        // Expiry on right
         if (mot?.TestExpiryDate && passed) {
           text(`Expires ${fmtDate(mot.TestExpiryDate)}`, PAGE.margin + 96, cursorY + 34, { font: F.sans, size: 10, color: C.sub, width: PAGE.contentWidth - 120 - 16, align: 'right' });
         }
@@ -1130,16 +1179,16 @@ async generatePdfBuffer(
         cursorY += itemH + 8;
       });
 
-      if (!isPremium && motHistory.length > 3) {
+      if (!isPremium && motHistoryRaw.length > 3) {
         roundedRect(PAGE.margin, cursorY + 8, PAGE.contentWidth, 50, 14, C.amberPale, C.amberSoft, 1);
-        text(`🔒 ${motHistory.length - 3} more MOT records available with Premium`, PAGE.margin + 16, cursorY + 26, { font: F.sansMed, size: 11, color: C.amber, width: PAGE.contentWidth - 32 });
+        text(`[Locked]   ${motHistoryRaw.length - 3} more MOT records available with Premium`, PAGE.margin + 16, cursorY + 26, { font: F.sansMed, size: 11, color: C.amber, width: PAGE.contentWidth - 32 });
       }
     }
 
     drawPageFooter(4, 6);
 
     // ============================================================
-    // PAGE 5 — KEEPER HISTORY (Premium) or UPSELL (Standard) — Phase 1A field fixes
+    // PAGE 5 — KEEPER HISTORY (Premium) or UPSELL (Standard)
     // ============================================================
     doc.addPage();
     drawPageHeader();
@@ -1157,15 +1206,11 @@ async generatePdfBuffer(
         keepers.forEach((k: any, i: number) => {
           const itemH = 56;
           roundedRect(PAGE.margin, cursorY, PAGE.contentWidth, itemH, 14, C.card, C.border);
-
-          // Number badge — green
           roundedRect(PAGE.margin + 16, cursorY + 12, 32, 32, 16, C.greenSoft);
           text(String(i + 1), PAGE.margin + 16, cursorY + 21, { font: F.sansBold, size: 13, color: C.green, width: 32, align: 'center' });
-
           text(`Keeper ${i + 1}`, PAGE.margin + 64, cursorY + 14, { font: F.sansMed, size: 12, color: C.text, width: PAGE.contentWidth - 80 });
           const dateStr = fmtDate(k?.DateOfLastKeeperChange || k?.DateOfTransaction || k?.date);
           text(`Transferred: ${dateStr}`, PAGE.margin + 64, cursorY + 32, { font: F.sans, size: 10, color: C.sub, width: PAGE.contentWidth - 80 });
-
           cursorY += itemH + 8;
         });
       }
@@ -1185,8 +1230,8 @@ async generatePdfBuffer(
       benefits.forEach((b) => {
         const itemH = 56;
         roundedRect(PAGE.margin, cursorY, PAGE.contentWidth, itemH, 14, C.card, C.border);
-        roundedRect(PAGE.margin + 16, cursorY + 14, 28, 28, 14, C.greenPale);
-        text('✓', PAGE.margin + 16, cursorY + 19, { font: F.sansBold, size: 14, color: C.green, width: 28, align: 'center' });
+        // Green dot (drawn, not glyph)
+        doc.circle(PAGE.margin + 30, cursorY + 28, 6).fillColor(C.green).fill();
         text(b.title, PAGE.margin + 56, cursorY + 14, { font: F.sansBold, size: 12, color: C.text, width: PAGE.contentWidth - 72 });
         text(b.desc, PAGE.margin + 56, cursorY + 32, { font: F.sans, size: 10, color: C.sub, width: PAGE.contentWidth - 72 });
         cursorY += itemH + 8;
@@ -1195,7 +1240,7 @@ async generatePdfBuffer(
       cursorY += 16;
       roundedRect(PAGE.margin, cursorY, PAGE.contentWidth, 80, 18, C.green);
       text('Upgrade for £3 at cheapregcheck.com', PAGE.margin, cursorY + 24, { font: F.sansBold, size: 16, color: C.paper, width: PAGE.contentWidth, align: 'center' });
-      text('Same registration · Instant unlock · Secure payment', PAGE.margin, cursorY + 50, { font: F.sans, size: 11, color: C.greenPale, width: PAGE.contentWidth, align: 'center' });
+      text('Same registration  ·  Instant unlock  ·  Secure payment', PAGE.margin, cursorY + 50, { font: F.sans, size: 11, color: C.greenPale, width: PAGE.contentWidth, align: 'center' });
     }
 
     drawPageFooter(5, 6);
