@@ -1874,21 +1874,21 @@ function renderFreeData(v) {
 
   // ── Vehicle Details card ──
   const avgMi = s(v.averageMileage);
-  // document.getElementById('vehicleRows').innerHTML =
-  //   dr('Make',                    show(v.make)) +
-  //   (model ? dr('Model',          model) : '') +
-  //   dr('Colour',                  show(v.colour)) +
-  //   (s(v.bodyStyle) ? dr('Body style', show(v.bodyStyle)) : '') +
-  //   dr('Year of manufacture',     show(v.yearOfManufacture)) +
-  //   dr('Engine capacity',         s(v.engineCapacity) ? v.engineCapacity + ' cc' : 'N/A') +
-  //   dr('Fuel type',               show(v.fuelType)) +
-  //   dr('CO₂ emissions',           co2 ? co2 + ' g/km' : 'N/A') +
-  //   dr('Euro status',             show(v.euroStatus)) +
-  //   (s(v.realDrivingEmissions) ? dr('Real driving emissions', v.realDrivingEmissions + ' (RDE)') : '') +
-  //   (s(v.revenueWeight)        ? dr('Revenue weight',         v.revenueWeight + ' kg')            : '') +
-  //   dr('Type approval',           show(v.typeApproval)) +
-  //   dr('Wheel plan',              show(v.wheelplan)) +
-  //   (avgMi ? dr('Average mileage', parseInt(avgMi).toLocaleString() + ' mi/yr') : '');
+  document.getElementById('vehicleRows').innerHTML =
+    dr('Make',                    show(v.make)) +
+    (model ? dr('Model',          model) : '') +
+    dr('Colour',                  show(v.colour)) +
+    (s(v.bodyStyle) ? dr('Body style', show(v.bodyStyle)) : '') +
+    dr('Year of manufacture',     show(v.yearOfManufacture)) +
+    dr('Engine capacity',         s(v.engineCapacity) ? v.engineCapacity + ' cc' : 'N/A') +
+    dr('Fuel type',               show(v.fuelType)) +
+    dr('CO₂ emissions',           co2 ? co2 + ' g/km' : 'N/A') +
+    dr('Euro status',             show(v.euroStatus)) +
+    (s(v.realDrivingEmissions) ? dr('Real driving emissions', v.realDrivingEmissions + ' (RDE)') : '') +
+    (s(v.revenueWeight)        ? dr('Revenue weight',         v.revenueWeight + ' kg')            : '') +
+    dr('Type approval',           show(v.typeApproval)) +
+    dr('Wheel plan',              show(v.wheelplan)) +
+    (avgMi ? dr('Average mileage', parseInt(avgMi).toLocaleString() + ' mi/yr') : '');
 
   document.getElementById('vehicleRows').innerHTML =
   dr('Make', show(v.make)) +
