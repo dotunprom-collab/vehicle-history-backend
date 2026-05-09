@@ -237,10 +237,6 @@ export class PaymentService {
 return session;
   }
 
-  // =========================
-  // 🔔 STRIPE WEBHOOK
-  // =========================
-
 // =========================
 // 🔔 STRIPE WEBHOOK
 // =========================
@@ -339,6 +335,7 @@ async handleWebhook(
         sessionId: session.id,
         email,
         reg,
+        tier,
       });
 
       // =====================================
@@ -350,7 +347,6 @@ async handleWebhook(
   try {
 
     console.log('🚀 BACKGROUND TASK STARTED');
-
     logger.info({
       event: 'STARTING_REPORT_GENERATION',
       reg,
@@ -365,7 +361,6 @@ async handleWebhook(
     console.log('✅ REPORT GENERATED');
 
     if ('error' in report) {
-
       logger.error({
         event: 'REPORT_GENERATION_FAILED',
         reg,
@@ -410,7 +405,6 @@ async handleWebhook(
     });
 
   } catch (err: any) {
-
     console.error(
       '❌ BACKGROUND TASK FAILED',
       err,
@@ -437,7 +431,6 @@ async handleWebhook(
         type: event.type,
       });
   }
-
   return { received: true };
 }
   // =========================
