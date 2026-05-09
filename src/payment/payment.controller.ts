@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Get,
-  Res,
-  Query,
-  Headers,
-  Req,
-  HttpCode,
+import {Controller,Post,Body,Get,Res,Query,Headers,Req,HttpCode,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { PaymentService } from './payment.service';
@@ -91,22 +82,20 @@ async webhook(
   @Headers('stripe-signature')
   signature: string,
 ) {
-  console.log(
-    'RAW BODY EXISTS:',
-    !!req.body
-  );
-  console.log(
-    'SIGNATURE EXISTS:',
-    !!signature
-  );
-  this.paymentService.handleWebhook(
-  req.body,
-  signature,
-);
-
-return {
-  received: true,
-};
+  try {
+    return await this.paymentService.handleWebhook(
+      req.body,
+      signature,
+    );
+  } catch (err: any) {
+    logger.error({
+      event: 'STRIPE_WEBHOOK_HANDLER_FAILED',
+      error: err?.message || String(err),
+    });
+    Sentry.captureException(err);
+    // Re-throw so Nest returns 500 and Stripe retries.
+    throw err;
+  }
 }
 
   // =========================
