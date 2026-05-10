@@ -1160,19 +1160,36 @@ async generatePdfBuffer(
     text('Quick summary of all key checks for this vehicle', PAGE.margin, cursorY + 38, { font: F.sans, size: 11, color: C.sub, width: PAGE.contentWidth });
     cursorY += 80;
 
+    // Drive the page-2 risk card off the buyer verdict so it matches the cover
+    const bvTop = (data as any)?.buyerVerdict;
+    const topLabel = bvTop?.verdict === 'SAFE_BUY' ? 'SAFE BUY'
+                   : bvTop?.verdict === 'CAUTION' ? 'CAUTION'
+                   : bvTop?.verdict === 'HIGH_RISK' ? 'HIGH RISK'
+                   : (riskLevel + ' RISK');
+    const topFg = bvTop?.verdict === 'SAFE_BUY' ? C.green
+                : bvTop?.verdict === 'CAUTION' ? C.amber
+                : bvTop?.verdict === 'HIGH_RISK' ? C.red
+                : riskFg;
+    const topSoft = bvTop?.verdict === 'SAFE_BUY' ? C.greenPale
+                  : bvTop?.verdict === 'CAUTION' ? C.amberPale
+                  : bvTop?.verdict === 'HIGH_RISK' ? C.redPale
+                  : riskSoft;
+    const topHeadline = bvTop?.headline || verdict;
+
     const gCardH = 180;
     roundedRect(PAGE.margin, cursorY, PAGE.contentWidth, gCardH, 18, C.card, C.border);
     text('Overall risk assessment', PAGE.margin + 22, cursorY + 20, { font: F.sansMed, size: 11, color: C.sub });
 
-    text(String(riskScore), PAGE.margin + 22, cursorY + 44, { font: F.serif, size: 64, color: riskFg });
+    text(String(riskScore), PAGE.margin + 22, cursorY + 44, { font: F.serif, size: 64, color: topFg });
     text('/ 100', PAGE.margin + 22 + 80, cursorY + 80, { font: F.sansMed, size: 14, color: C.sub });
 
-    const lvlBadgeW = 90;
+    doc.font(F.sansBold).fontSize(10);
+    const lvlBadgeW = Math.max(90, doc.widthOfString(topLabel) + 28);
     const lvlBadgeH = 24;
-    roundedRect(PAGE.margin + 22, cursorY + 122, lvlBadgeW, lvlBadgeH, 12, riskSoft);
-    text(riskLevel + ' RISK', PAGE.margin + 22, cursorY + 128, { font: F.sansBold, size: 10, color: riskFg, width: lvlBadgeW, align: 'center', characterSpacing: 1 });
+    roundedRect(PAGE.margin + 22, cursorY + 122, lvlBadgeW, lvlBadgeH, 12, topSoft);
+    text(topLabel, PAGE.margin + 22, cursorY + 128, { font: F.sansBold, size: 10, color: topFg, width: lvlBadgeW, align: 'center', characterSpacing: 1 });
 
-    text(verdict, PAGE.margin + 22, cursorY + 152, { font: F.sansMed, size: 11, color: C.text, width: PAGE.contentWidth - 44 });
+    text(topHeadline, PAGE.margin + 22, cursorY + 152, { font: F.sansMed, size: 11, color: C.text, width: PAGE.contentWidth - 44 });
 
     const gX = PAGE.margin + 200;
     const gY = cursorY + 60;
@@ -1182,11 +1199,11 @@ async generatePdfBuffer(
     const fillPct = riskScore / 100;
     const fillW = (gW - 4) * fillPct;
     if (fillW > 4) {
-      roundedRect(gX + 2, gY + 2, fillW, gH - 4, 9, riskFg);
+      roundedRect(gX + 2, gY + 2, fillW, gH - 4, 9, topFg);
     }
     const indX = gX + (gW * riskScore) / 100;
     if (riskScore > 0) {
-      doc.polygon([indX - 6, gY - 5], [indX + 6, gY - 5], [indX, gY + 3]).fillColor(riskFg).fill();
+      doc.polygon([indX - 6, gY - 5], [indX + 6, gY - 5], [indX, gY + 3]).fillColor(topFg).fill();
     }
     text('0', gX, gY + 32, { font: F.sans, size: 9, color: C.sub2, width: 30 });
     text('LOW', gX + gW * 0.15 - 15, gY + 32, { font: F.sansMed, size: 9, color: C.green, width: 30, align: 'center' });
@@ -1234,36 +1251,50 @@ async generatePdfBuffer(
     });
     cursorY += cardH * 2 + 30;
 
-    // Buyer Verdict card — replaces "What looks good / Things to check"
+  // Buyer Verdict card — replaces "What looks good / Things to check"
     const bvForPage2 = (data as any)?.buyerVerdict;
     const bvPros: string[] = bvForPage2?.pros?.length ? bvForPage2.pros : positives;
     const bvWatch: string[] = bvForPage2?.watchOuts?.length ? bvForPage2.watchOuts : issues;
     const bvAction: string = bvForPage2?.action || '';
 
     if (bvPros.length > 0 || bvWatch.length > 0 || bvAction) {
-      const rowsCount = Math.max(bvPros.length, bvWatch.length);
-      const sumH = rowsCount * 18 + 50 + (bvAction ? 36 : 0);
-      roundedRect(PAGE.margin, cursorY, PAGE.contentWidth, sumH, 14, C.surface);
       const colW = (PAGE.contentWidth - 32) / 2;
+      const textW = colW - 24;
+      const rowGap = 6;
+
+      // Pre-measure each row to compute card height
+      doc.font(F.sans).fontSize(10);
+      const prosHeights = bvPros.map((p) => doc.heightOfString(p, { width: textW }));
+      const watchHeights = bvWatch.map((p) => doc.heightOfString(p, { width: textW }));
+      const prosTotal = prosHeights.reduce((s, h) => s + h + rowGap, 0);
+      const watchTotal = watchHeights.reduce((s, h) => s + h + rowGap, 0);
+      const colsTotal = Math.max(prosTotal, watchTotal);
+      const sumH = 44 + colsTotal + (bvAction ? 48 : 12);
+
+      roundedRect(PAGE.margin, cursorY, PAGE.contentWidth, sumH, 14, C.surface);
 
       if (bvPros.length > 0) {
         text('What looks good', PAGE.margin + 16, cursorY + 16, { font: F.sansMed, size: 11, color: C.green, width: colW });
+        let rowY = cursorY + 40;
         bvPros.forEach((p, i) => {
-          doc.circle(PAGE.margin + 22, cursorY + 44 + i * 18, 3).fillColor(C.green).fill();
-          text(p, PAGE.margin + 32, cursorY + 38 + i * 18, { font: F.sans, size: 10, color: C.text, width: colW - 24 });
+          doc.circle(PAGE.margin + 22, rowY + 6, 3).fillColor(C.green).fill();
+          text(p, PAGE.margin + 32, rowY, { font: F.sans, size: 10, color: C.text, width: textW });
+          rowY += prosHeights[i] + rowGap;
         });
       }
       if (bvWatch.length > 0) {
         const ix = PAGE.margin + colW + 16;
         text('Watch-outs', ix, cursorY + 16, { font: F.sansMed, size: 11, color: C.red, width: colW });
+        let rowY = cursorY + 40;
         bvWatch.forEach((p, i) => {
-          doc.circle(ix + 6, cursorY + 44 + i * 18, 3).fillColor(C.red).fill();
-          text(p, ix + 16, cursorY + 38 + i * 18, { font: F.sans, size: 10, color: C.text, width: colW - 24 });
+          doc.circle(ix + 6, rowY + 6, 3).fillColor(C.red).fill();
+          text(p, ix + 16, rowY, { font: F.sans, size: 10, color: C.text, width: textW });
+          rowY += watchHeights[i] + rowGap;
         });
       }
 
       if (bvAction) {
-        const actionY = cursorY + rowsCount * 18 + 56;
+        const actionY = cursorY + 40 + colsTotal + 8;
         text('Recommended action', PAGE.margin + 16, actionY, { font: F.sansMed, size: 10, color: C.sub, width: PAGE.contentWidth - 32 });
         text(bvAction, PAGE.margin + 16, actionY + 14, { font: F.sansMed, size: 11, color: C.text, width: PAGE.contentWidth - 32 });
       }

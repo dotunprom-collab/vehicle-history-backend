@@ -371,8 +371,6 @@ async handleWebhook(
     }
 
 console.log('🚀 GENERATING PDF');
-    console.log('🔥 EMAIL PATH BUYER VERDICT:', JSON.stringify((report as any)?.buyerVerdict, null, 2));
-    console.log('🔥 EMAIL PATH REPORT KEYS:', Object.keys(report || {}));
 
     const pdfBuffer =
       await this.vehicleService.generatePdfBuffer(
