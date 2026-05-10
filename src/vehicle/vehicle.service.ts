@@ -10,6 +10,7 @@ import { AuthService } from '../auth/auth.service';
 import { ConsumedSession } from '../payment/consumed-session.entity';
 import { logger } from '../logger';
 import { Inject, forwardRef } from '@nestjs/common';
+import { computeBuyerVerdict } from './buyer-verdict';
 
 @Injectable()
 export class VehicleService {
@@ -439,60 +440,63 @@ async getFullReport(
     }
     // STANDARD
     else if (accessTier === 'standard') {
-      report =
-        await this.getRccStandard(reg);
+      report = await this.getRccStandard(reg);
+
+      report.buyerVerdict = computeBuyerVerdict({
+        tier: 'standard',
+        riskScore: report?.riskScore,
+        writeOff: report?.writeOff,
+        vehicle: report?.vehicle,
+        motHistory: report?.motHistory,
+        keeperHistory: report?.keeperHistory,
+        insights: report?.insights,
+      });
 
       logger.info({
-  event: 'STANDARD_REPORT_GENERATED',
-  reg,
-  tier: report?.tier,
-  make: report?.vehicle?.make || 'N/A',
-  model: report?.vehicle?.model || 'N/A',
-});
+        event: 'STANDARD_REPORT_GENERATED',
+        reg,
+        tier: report?.tier,
+        make: report?.vehicle?.make || 'N/A',
+        model: report?.vehicle?.model || 'N/A',
+        verdict: report?.buyerVerdict?.verdict,
+      });
     }
 
-    // PREMIUM
+  // PREMIUM
     else if (accessTier === 'premium') {
-      const standard =
-        await this.getRccStandard(reg);
-      const { vehicle } =
-        await this.fetchRccData(reg);
-      const vdg =
-        await this.getVDGData(reg);
+      const standard = await this.getRccStandard(reg);
+      const { vehicle } = await this.fetchRccData(reg);
+      const vdg = await this.getVDGData(reg);
 
       report = {
         ...standard,
         tier: 'premium',
         vehicle: {
           ...standard.vehicle,
-          bodyStyle:
-            vehicle?.BodyStyle || null,
-          age:
-            vehicle?.Age || null,
-          taxBand:
-            vehicle?.RoadTaxData?.Band ||
-            null,
-          annualTax:
-            vehicle?.RoadTaxData
-              ?.TwelveMonthRate || null,
-          motDaysLeft:
-            vehicle?.DaysLeftUntilMotDue ||
-            null,
-          taxDaysLeft:
-            vehicle
-              ?.DaysLeftUntilRoadTaxDue ||
-            null,
-          averageMileage:
-            vehicle?.AverageMileage ||
-            null,
+          bodyStyle: vehicle?.BodyStyle || null,
+          age: vehicle?.Age || null,
+          taxBand: vehicle?.RoadTaxData?.Band || null,
+          annualTax: vehicle?.RoadTaxData?.TwelveMonthRate || null,
+          motDaysLeft: vehicle?.DaysLeftUntilMotDue || null,
+          taxDaysLeft: vehicle?.DaysLeftUntilRoadTaxDue || null,
+          averageMileage: vehicle?.AverageMileage || null,
         },
-        finance:
-          this.extractFinance(vdg),
-        stolen:
-          this.extractStolen(vdg),
-        writeOff:
-          this.extractWriteOff(vdg),
+        finance: this.extractFinance(vdg),
+        stolen: this.extractStolen(vdg),
+        writeOff: this.extractWriteOff(vdg),
       };
+
+      report.buyerVerdict = computeBuyerVerdict({
+        tier: 'premium',
+        riskScore: report.riskScore,
+        writeOff: report.writeOff,
+        finance: report.finance,
+        stolen: report.stolen,
+        vehicle: report.vehicle,
+        motHistory: report.motHistory,
+        keeperHistory: report.keeperHistory,
+        insights: report.insights,
+      });
     }
 
     else {
@@ -1109,13 +1113,31 @@ async generatePdfBuffer(
     const vCardY = 540;
     roundedRect(vCardX, vCardY, vCardW, vCardH, 18, C.card, C.border);
 
-    const badgeW = 100;
-    const badgeH = 26;
-    const badgeX = vCardX + (vCardW - badgeW) / 2;
-    roundedRect(badgeX, vCardY + 20, badgeW, badgeH, 13, riskSoft);
-    text(riskLevel + ' RISK', badgeX, vCardY + 27, { font: F.sansBold, size: 10, color: riskFg, width: badgeW, align: 'center', characterSpacing: 1 });
-    text(verdict, vCardX, vCardY + 60, { font: F.sansMed, size: 14, color: C.text, width: vCardW, align: 'center' });
-    text(`Risk score: ${riskScore} / 100`, vCardX, vCardY + 88, { font: F.sans, size: 11, color: C.sub, width: vCardW, align: 'center' });
+    // Buyer verdict badge (SAFE BUY / CAUTION / HIGH RISK)
+    const bv = (data as any)?.buyerVerdict;
+    const bvLabel = bv?.verdict === 'SAFE_BUY' ? 'SAFE BUY'
+                  : bv?.verdict === 'CAUTION' ? 'CAUTION'
+                  : bv?.verdict === 'HIGH_RISK' ? 'HIGH RISK'
+                  : (riskLevel + ' RISK');
+    const bvFg = bv?.verdict === 'SAFE_BUY' ? C.green
+               : bv?.verdict === 'CAUTION' ? C.amber
+               : bv?.verdict === 'HIGH_RISK' ? C.red
+               : riskFg;
+    const bvSoft = bv?.verdict === 'SAFE_BUY' ? C.greenPale
+                 : bv?.verdict === 'CAUTION' ? C.amberPale
+                 : bv?.verdict === 'HIGH_RISK' ? C.redPale
+                 : riskSoft;
+
+    doc.font(F.sansBold).fontSize(10);
+    const bvBadgeW = Math.max(100, doc.widthOfString(bvLabel) + 28);
+    const bvBadgeH = 26;
+    const bvBadgeX = vCardX + (vCardW - bvBadgeW) / 2;
+    roundedRect(bvBadgeX, vCardY + 20, bvBadgeW, bvBadgeH, 13, bvSoft);
+    text(bvLabel, bvBadgeX, vCardY + 27, { font: F.sansBold, size: 10, color: bvFg, width: bvBadgeW, align: 'center', characterSpacing: 1 });
+
+    const bvHeadline = bv?.headline || verdict;
+    text(bvHeadline, vCardX + 16, vCardY + 60, { font: F.sansMed, size: 12, color: C.text, width: vCardW - 32, align: 'center' });
+    text(`Risk score: ${riskScore} / 100`, vCardX, vCardY + 100, { font: F.sans, size: 10, color: C.sub, width: vCardW, align: 'center' });
 
     const teaserBits: string[] = [];
     teaserBits.push(`${motHistory.length} MOT record${motHistory.length === 1 ? '' : 's'}`);
@@ -1212,25 +1234,38 @@ async generatePdfBuffer(
     });
     cursorY += cardH * 2 + 30;
 
-    if (issues.length > 0 || positives.length > 0) {
-      const sumH = Math.max(positives.length, issues.length) * 18 + 50;
+    // Buyer Verdict card — replaces "What looks good / Things to check"
+    const bvForPage2 = (data as any)?.buyerVerdict;
+    const bvPros: string[] = bvForPage2?.pros?.length ? bvForPage2.pros : positives;
+    const bvWatch: string[] = bvForPage2?.watchOuts?.length ? bvForPage2.watchOuts : issues;
+    const bvAction: string = bvForPage2?.action || '';
+
+    if (bvPros.length > 0 || bvWatch.length > 0 || bvAction) {
+      const rowsCount = Math.max(bvPros.length, bvWatch.length);
+      const sumH = rowsCount * 18 + 50 + (bvAction ? 36 : 0);
       roundedRect(PAGE.margin, cursorY, PAGE.contentWidth, sumH, 14, C.surface);
       const colW = (PAGE.contentWidth - 32) / 2;
 
-      if (positives.length > 0) {
+      if (bvPros.length > 0) {
         text('What looks good', PAGE.margin + 16, cursorY + 16, { font: F.sansMed, size: 11, color: C.green, width: colW });
-        positives.forEach((p, i) => {
+        bvPros.forEach((p, i) => {
           doc.circle(PAGE.margin + 22, cursorY + 44 + i * 18, 3).fillColor(C.green).fill();
           text(p, PAGE.margin + 32, cursorY + 38 + i * 18, { font: F.sans, size: 10, color: C.text, width: colW - 24 });
         });
       }
-      if (issues.length > 0) {
+      if (bvWatch.length > 0) {
         const ix = PAGE.margin + colW + 16;
-        text('Things to check', ix, cursorY + 16, { font: F.sansMed, size: 11, color: C.red, width: colW });
-        issues.forEach((p, i) => {
+        text('Watch-outs', ix, cursorY + 16, { font: F.sansMed, size: 11, color: C.red, width: colW });
+        bvWatch.forEach((p, i) => {
           doc.circle(ix + 6, cursorY + 44 + i * 18, 3).fillColor(C.red).fill();
           text(p, ix + 16, cursorY + 38 + i * 18, { font: F.sans, size: 10, color: C.text, width: colW - 24 });
         });
+      }
+
+      if (bvAction) {
+        const actionY = cursorY + rowsCount * 18 + 56;
+        text('Recommended action', PAGE.margin + 16, actionY, { font: F.sansMed, size: 10, color: C.sub, width: PAGE.contentWidth - 32 });
+        text(bvAction, PAGE.margin + 16, actionY + 14, { font: F.sansMed, size: 11, color: C.text, width: PAGE.contentWidth - 32 });
       }
     }
 
