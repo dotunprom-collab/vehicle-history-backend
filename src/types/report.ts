@@ -21,4 +21,16 @@ export interface VehicleReport {
 
   riskScore: number;
   insights: string[];
+
+  buyerVerdict?: BuyerVerdict;
+}
+
+export type VerdictLevel = 'SAFE_BUY' | 'CAUTION' | 'HIGH_RISK';
+
+export interface BuyerVerdict {
+  verdict: VerdictLevel;
+  headline: string;
+  pros: string[];
+  watchOuts: string[];
+  action: string;
 }

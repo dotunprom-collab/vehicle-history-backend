@@ -83,6 +83,10 @@ async full(@Body() body: any) {
         return res.status(502).json({ error: 'Failed to load vehicle data' });
       }
 
+console.log('🔥 DOWNLOAD PATH BUYER VERDICT:', JSON.stringify((data as any)?.buyerVerdict, null, 2));
+      console.log('🔥 DOWNLOAD PATH DATA KEYS:', Object.keys(data || {}));
+      console.log('🔥 DOWNLOAD PATH TIER:', tier);
+
       const pdfBuffer = await this.vehicleService.generatePdfBuffer(
         reg,
         data,
