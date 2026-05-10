@@ -1196,13 +1196,18 @@ async generatePdfBuffer(
     const gW = PAGE.contentWidth - 220;
     const gH = 22;
     roundedRect(gX, gY, gW, gH, 11, C.surface);
-    const fillPct = riskScore / 100;
-    const fillW = (gW - 4) * fillPct;
+    // Bar position is driven by buyer verdict tier, not raw score.
+    // Centres align with the LOW/MEDIUM/HIGH labels below (0.15 / 0.45 / 0.80).
+    const verdictPct = bvTop?.verdict === 'SAFE_BUY' ? 0.15
+                     : bvTop?.verdict === 'CAUTION' ? 0.45
+                     : bvTop?.verdict === 'HIGH_RISK' ? 0.80
+                     : riskScore / 100;
+    const fillW = (gW - 4) * verdictPct;
     if (fillW > 4) {
       roundedRect(gX + 2, gY + 2, fillW, gH - 4, 9, topFg);
     }
-    const indX = gX + (gW * riskScore) / 100;
-    if (riskScore > 0) {
+    const indX = gX + gW * verdictPct;
+    if (verdictPct > 0) {
       doc.polygon([indX - 6, gY - 5], [indX + 6, gY - 5], [indX, gY + 3]).fillColor(topFg).fill();
     }
     text('0', gX, gY + 32, { font: F.sans, size: 9, color: C.sub2, width: 30 });
