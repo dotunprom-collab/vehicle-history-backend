@@ -1338,8 +1338,8 @@ async generatePdfBuffer(
 
     const leftCardH = 50 + leftSpecs.length * 32;
     roundedRect(PAGE.margin, cursorY, detailColW, leftCardH, 14, C.card, C.border);
-    text('Vehicle Details', PAGE.margin + 16, cursorY + 16, { font: F.sansBold, size: 13, color: C.text });
-    text('Official DVLA records', PAGE.margin + 16, cursorY + 34, { font: F.sans, size: 9, color: C.sub });
+text('Vehicle Identity', PAGE.margin + 16, cursorY + 16, { font: F.sansBold, size: 13, color: C.text });
+    text('Make, model & specification', PAGE.margin + 16, cursorY + 34, { font: F.sans, size: 9, color: C.sub });
 
     leftSpecs.forEach((s, i) => {
       const ry = cursorY + 60 + i * 32;
@@ -1377,8 +1377,8 @@ async generatePdfBuffer(
 
     const rightCardH = 50 + rightSpecs.length * 32;
     roundedRect(rightX, cursorY, detailColW, rightCardH, 14, C.card, C.border);
-    text('Tax & Registration', rightX + 16, cursorY + 16, { font: F.sansBold, size: 13, color: C.text });
-    text('From DVLA database', rightX + 16, cursorY + 34, { font: F.sans, size: 9, color: C.sub });
+text('Ownership & Status', rightX + 16, cursorY + 16, { font: F.sansBold, size: 13, color: C.text });
+    text('Current MOT, tax & registration state', rightX + 16, cursorY + 34, { font: F.sans, size: 9, color: C.sub });
 
     rightSpecs.forEach((s, i) => {
       const ry = cursorY + 60 + i * 32;
