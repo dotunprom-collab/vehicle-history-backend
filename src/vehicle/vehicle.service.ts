@@ -192,26 +192,100 @@ async getRccStandard(reg: string) {
       throw new Error('RCC returned no vehicle data');
     }
 
+    // Helper: coerce API placeholders ('...', '', undefined, null) to null
+    const clean = (v: any) => {
+      if (v === undefined || v === null) return null;
+      if (typeof v === 'string') {
+        const trimmed = v.trim();
+        if (trimmed === '' || trimmed === '...') return null;
+        return trimmed;
+      }
+      return v;
+    };
+
+    const keeperHistoryArr = vehicle?.KeeperHistory || [];
+    const latestKeeper = keeperHistoryArr[0] || {};
+
     return {
       tier: 'standard',
       vehicle: {
         reg,
-        make: vehicle?.Make || 'Unknown',
-        model: vehicle?.Model || 'Unknown',
-        fuel: vehicle?.FuelType || null,
-        colour: vehicle?.Colour || null,
-        year: vehicle?.YearOfManufacture || null,
-        engineCapacity: vehicle?.CylinderCapacity || null,
-        co2: vehicle?.Co2Emissions || null,
-        taxStatus: vehicle?.RoadTaxStatusDescription || null,
-        motStatus: vehicle?.MotStatusDescription || null,
+
+        // ── Identity ──
+        make: clean(vehicle?.Make) || 'Unknown',
+        model: clean(vehicle?.Model) || 'Unknown',
+        year: clean(vehicle?.YearOfManufacture),
+        colour: clean(vehicle?.Colour),
+        originalColour: clean(vehicle?.OriginalColour),
+        colourChangesQuantity: vehicle?.ColourChangesQuantity ?? null,
+        fuel: clean(vehicle?.FuelType),
+        engineCapacity: clean(vehicle?.CylinderCapacity),
+        co2: vehicle?.Co2Emissions ?? null,
+        bodyStyle: clean(vehicle?.BodyStyle),
+        vehicleType: clean(vehicle?.VehicleType),
+        euroStatus: clean(vehicle?.EuroStatus),
+        insuranceGroup: clean(vehicle?.InsuranceGroup),
+        bhp: clean(vehicle?.Bhp),
+        powerKw: clean(vehicle?.PowerKw),
+        topSpeed: clean(vehicle?.TopSpeed),
+
+        // ── Registration & status ──
+        dateOfFirstRegistration: clean(vehicle?.DateOfFirstRegistration),
+        dateOfFirstRegistrationParsed: clean(vehicle?.DateOfFirstRegistrationParsed),
+        dateOfLastV5CIssued: clean(vehicle?.DateOfLastV5CIssued),
+        age: clean(vehicle?.Age),
+        isImported: vehicle?.IsImported ?? false,
+        exported: vehicle?.Exported ?? false,
+        isScrapped: vehicle?.IsScrapped ?? false,
+        isVehicleSORN: vehicle?.IsVehicleSORN ?? false,
+
+        // ── MOT detail ──
+        motStatus: clean(vehicle?.MotStatusDescription),
+        dateMotDue: clean(vehicle?.DateMotDue),
+        dateMotDueParsed: clean(vehicle?.DateMotDueParsed),
+        daysLeftUntilMotDue: vehicle?.DaysLeftUntilMotDue ?? null,
+        lastMotTestDate: clean(vehicle?.LastMotTestDate),
+        motTestNumber: clean(vehicle?.MotTestNumber),
+        mileageBetweenLastMotPasses: vehicle?.MileageBetweenLastMotPasses ?? null,
+        mileageIssueIdentified: vehicle?.MotResultsSummary?.MileageIssueIdentified ?? false,
+        mileageIssueSummary: clean(vehicle?.MotResultsSummary?.MileageIssueSummary),
+        isMotDue: vehicle?.IsMOTDue ?? false,
+        isMotNearExpiry: vehicle?.IsMOTNearExpiry ?? false,
+
+        // ── Tax detail ──
+        taxStatus: clean(vehicle?.RoadTaxStatusDescription),
+        taxBand: clean(vehicle?.RoadTaxData?.Band),
+        sixMonthRate: vehicle?.RoadTaxData?.SixMonthRate ?? null,
+        twelveMonthRate: vehicle?.RoadTaxData?.TwelveMonthRate ?? null,
+        dateRoadTaxDue: clean(vehicle?.DateRoadTaxDue),
+        dateRoadTaxDueParsed: clean(vehicle?.DateRoadTaxDueParsed),
+        daysLeftUntilRoadTaxDue: vehicle?.DaysLeftUntilRoadTaxDue ?? null,
+        isRoadTaxDue: vehicle?.IsRoadTaxDue ?? false,
+        isRoadTaxNearExpiry: vehicle?.IsRoadTaxNearExpiry ?? false,
+
+        // ── Mileage intelligence ──
+        averageMileage: clean(vehicle?.AverageMileage),
+        averageMileagePerYear: vehicle?.AverageMileagePerYear ?? null,
+
+        // ── Keepers (derived from history) ──
+        numberPreviousKeepers: latestKeeper?.NumberPreviousKeepers ?? null,
+        dateOfLastKeeperChange: clean(latestKeeper?.DateOfLastKeeperChange),
+
+        // ── Image ──
+        vehicleImageUrl: clean(vehicle?.VehicleImageUrl),
+
+        // ── Fuel economy (whole sub-object, pass-through) ──
+        fuelEconomyData: vehicle?.FuelEconomyData ?? null,
       },
 
       motHistory:
         vehicle?.MotResultsSummary?.MotResults || [],
 
       keeperHistory:
-        vehicle?.KeeperHistory || [],
+        keeperHistoryArr,
+
+      // ── Recalls (top-level) ──
+      vehicleRecalls: vehicle?.VehicleRecalls ?? null,
 
       writeOff: 'unknown',
     };
@@ -1377,7 +1451,7 @@ text('Vehicle Identity', PAGE.margin + 16, cursorY + 16, { font: F.sansBold, siz
 
     const rightCardH = 50 + rightSpecs.length * 32;
     roundedRect(rightX, cursorY, detailColW, rightCardH, 14, C.card, C.border);
-text('Ownership & Status', rightX + 16, cursorY + 16, { font: F.sansBold, size: 13, color: C.text });
+    text('Ownership & Status', rightX + 16, cursorY + 16, { font: F.sansBold, size: 13, color: C.text });
     text('Current MOT, tax & registration state', rightX + 16, cursorY + 34, { font: F.sans, size: 9, color: C.sub });
 
     rightSpecs.forEach((s, i) => {
