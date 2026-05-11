@@ -1437,6 +1437,9 @@ text('Vehicle Identity', PAGE.margin + 16, cursorY + 16, { font: F.sansBold, siz
     if (v.taxDaysLeft !== undefined && v.taxDaysLeft !== null) {
       rightSpecs.push(['Tax days left', `${v.taxDaysLeft} days`]);
     }
+    if (v.lastMotTestDate) {
+      rightSpecs.push(['Last MOT', fmtDate(v.lastMotTestDate)]);
+    }
     if (isPremium) {
       if (v.taxBand) rightSpecs.push(['Tax band', `Band ${v.taxBand}`]);
       if (v.annualTax) rightSpecs.push(['Annual tax', `£${v.annualTax}`]);

@@ -1433,7 +1433,20 @@ function buildFindings(v, rawData) {
     });
   }
 
-  // ── 4. MILEAGE ANOMALY (Critical or High) ──
+// ── 4. MILEAGE ANOMALY (Critical or High) ──
+  // 4a. API-provided flag from RCC
+  if (v.mileageIssueIdentified) {
+    findings.push({
+      severity: 'crit', category: 'Mileage',
+      icon: ICO.warn,
+      title: 'Mileage anomaly flagged by data provider',
+      desc: v.mileageIssueSummary || 'The vehicle data provider has flagged a mileage inconsistency in this car\'s history. Mileage anomalies are often associated with odometer tampering or clerical errors. This affects resale value and may indicate fraud.',
+      evidence: 'DVSA / data provider flag',
+      recco: 'Ask the seller for a written explanation of the mileage history before purchase.',
+    });
+  }
+
+  // 4b. Local computation from MOT mileages
   const milePts = motResults
     .map(t=>({date:new Date(t.DateOfTest||t.date), miles:parseInt(t.OdometerModel?.OdometerReading||t.mileage||0)}))
     .filter(p=>p.miles>0 && !isNaN(p.date.getTime()));
@@ -2424,6 +2437,7 @@ ${rawData.tier === 'premium'
         ${s(v.taxBand)?dr('Tax band','Band '+v.taxBand+(s(v.taxAnnualRate)?` — £${v.taxAnnualRate}/yr`:'')):''}
         ${dr('First registered', show(v.monthOfFirstRegistration))}
         ${dr('Last V5C', fmtDate(v.dateOfLastV5CIssued))}
+        ${s(v.lastMotTestDate)?dr('Last MOT', fmtDate(v.lastMotTestDate)):''}
         ${dr('Exported', v.markedForExport?'Yes':'No', v.markedForExport?'chip-a':'chip-g', v.markedForExport?'hi-a':'')}
         ${dr('Scrapped', v.isScrapped?'Yes':'No', v.isScrapped?'chip-r':'chip-g', v.isScrapped?'hi-r':'')}
       </div>
