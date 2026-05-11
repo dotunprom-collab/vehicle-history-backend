@@ -2352,14 +2352,13 @@ ${rawData.tier === 'premium'
         ${dr('Colour', show(v.colour))}
         ${s(v.bodyStyle)?dr('Body style',show(v.bodyStyle)):''}
         ${dr('Year', show(v.yearOfManufacture))}
-        ${dr('Engine', s(v.engineCapacity)?v.engineCapacity+' cc':'N/A')}
+        ${dr('Engine', show(v.engineCapacity))}
         ${dr('Fuel type', show(v.fuelType))}
         ${dr('CO₂', co2?co2+' g/km':'N/A')}
         ${s(v.euroStatus)?dr('Euro status',show(v.euroStatus)):''}
         ${s(v.revenueWeight)?dr('Weight',v.revenueWeight+' kg'):''}
-        ${dr('Wheel plan', show(v.wheelplan))}
-        ${dr('Type approval', show(v.typeApproval))}
-        ${s(v.averageMileage)?dr('Avg mileage',parseInt(v.averageMileage).toLocaleString()+' mi/yr'):''}
+        ${s(v.averageMileage)?dr('Mileage',parseInt(v.averageMileage).toLocaleString()+' mi'):''}
+        ${s(v.averageMileagePerYear)?dr('Avg/year',parseInt(v.averageMileagePerYear).toLocaleString()+' mi/yr'):''}
         ${v.colourChanges>0?dr('Colour changes',v.colourChanges,'chip-a'):''}
         ${v.isImported?dr('Imported','Yes','chip-a'):''}
       </div>
@@ -2371,7 +2370,7 @@ ${rawData.tier === 'premium'
       </div>
       <div class="ic-rows">
         ${dr('MOT status', motS, mp, motRowCls)}
-        ${s(v.motDaysLeft)?dr('MOT days left',v.motDaysLeft+' days',parseInt(v.motDaysLeft)<30?'chip-r':'chip-g'):dr('MOT due',fmtDate(v.artEndDate))}
+        ${s(v.motDaysLeft)?dr('MOT days left',v.motDaysLeft+' days',parseInt(v.motDaysLeft)<30?'chip-r':'chip-g'):dr('MOT due',fmtDate(v.motDueDate))}
         ${dr('Tax status', taxS, tp, taxRowCls)}
         ${s(v.taxDaysLeft)?dr('Tax days left',v.taxDaysLeft+' days',parseInt(v.taxDaysLeft)<30?'chip-r':'chip-g'):dr('Tax due',fmtDate(v.taxDueDate))}
         ${s(v.taxBand)?dr('Tax band','Band '+v.taxBand+(s(v.taxAnnualRate)?` — £${v.taxAnnualRate}/yr`:'')):''}
