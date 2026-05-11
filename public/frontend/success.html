@@ -1338,7 +1338,7 @@ function buildFindings(v, rawData) {
   }
 
   // ── 1. WRITE-OFF (Critical) ──
-  const isWriteOff = (rawData?.writeOff && String(rawData.writeOff).toLowerCase()!=='clear' && String(rawData.writeOff).toLowerCase()!=='no')
+  const isWriteOff = String(rawData?.writeOff || '').toLowerCase() === 'yes'
                   || (rawData?.miaftr?.WriteOffRecordList?.length > 0);
   if(isWriteOff){
     const recs = rawData?.miaftr?.WriteOffRecordList || [];
@@ -1355,7 +1355,7 @@ function buildFindings(v, rawData) {
   }
 
   // ── 2. STOLEN MARKER (Critical) ──
-  const isStolen = (rawData?.stolen && String(rawData.stolen).toLowerCase()!=='clear' && String(rawData.stolen).toLowerCase()!=='no')
+  const isStolen = String(rawData?.stolen || '').toLowerCase() === 'yes'
                 || (rawData?.pnc?.IsStolen === true);
   if(isStolen){
     findings.push({
@@ -1369,7 +1369,7 @@ function buildFindings(v, rawData) {
   }
 
   // ── 3. OUTSTANDING FINANCE (Critical) ──
-  const hasFinance = (rawData?.finance && String(rawData.finance).toLowerCase()!=='clear' && String(rawData.finance).toLowerCase()!=='no')
+  const hasFinance = String(rawData?.finance || '').toLowerCase() === 'yes'
                   || (rawData?.financeDetails?.FinanceRecordList?.length > 0);
   if(hasFinance){
     const recs = rawData?.financeDetails?.FinanceRecordList || [];
