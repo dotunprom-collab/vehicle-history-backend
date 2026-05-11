@@ -2260,7 +2260,7 @@ function renderReport(v, rawData) {
       <div class="cc-lbl">Finance Check</div>
       <div class="cc-box lock">
         <div class="cc-dot lock"></div>
-        <div class="cc-val lock">🔒 HPI Hidden</div>
+        <div class="cc-val lock">🔒 Don't know if finance is owed</div>
       </div>
       <div class="cc-note">Outstanding finance can lead to repossession.</div>
       <div class="locked-pill-cta">
@@ -2279,7 +2279,7 @@ ${rawData.tier === 'premium'
       <div class="cc-lbl">Stolen Check</div>
       <div class="cc-box lock">
         <div class="cc-dot lock"></div>
-        <div class="cc-val lock">🔒 PNC Hidden</div>
+        <div class="cc-val lock">🔒 Don't know if it's stolen</div>
       </div>
       <div class="cc-note">Stolen vehicles can be seized by police at any time.</div>
       <div class="locked-pill-cta">
@@ -2289,7 +2289,23 @@ ${rawData.tier === 'premium'
     </div>
   `
 }
-      ${checkCell('Write-off',     rawData.writeOff,'Cat A/B/S/N records',   !hasPaid)}
+      ${rawData.tier === 'premium'
+  ? checkCell('Write-off', rawData.writeOff, 'Cat A/B/S/N records', false)
+  : `
+  <div class="check-cell locked-check" onclick="upgradeToPremium()" role="button" tabindex="0" onkeydown="if(event.key==='Enter')upgradeToPremium()">
+      <div class="cc-lbl">Write-off</div>
+      <div class="cc-box lock">
+        <div class="cc-dot lock"></div>
+        <div class="cc-val lock">🔒 Don't know if it's a write-off</div>
+      </div>
+      <div class="cc-note">Cat S or N vehicles can be unsafe to drive and worth thousands less.</div>
+      <div class="locked-pill-cta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Unlock for £3
+      </div>
+    </div>
+  `
+}
     </div>
   </div>
 
