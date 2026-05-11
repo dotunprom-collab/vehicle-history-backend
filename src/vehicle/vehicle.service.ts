@@ -230,8 +230,7 @@ async getRccStandard(reg: string) {
         topSpeed: clean(vehicle?.TopSpeed),
 
         // ── Registration & status ──
-        dateOfFirstRegistration: clean(vehicle?.DateOfFirstRegistration),
-        dateOfFirstRegistrationParsed: clean(vehicle?.DateOfFirstRegistrationParsed),
+        monthOfFirstRegistration: clean(vehicle?.DateOfFirstRegistration),
         dateOfLastV5CIssued: clean(vehicle?.DateOfLastV5CIssued),
         age: clean(vehicle?.Age),
         isImported: vehicle?.IsImported ?? false,
@@ -241,9 +240,8 @@ async getRccStandard(reg: string) {
 
         // ── MOT detail ──
         motStatus: clean(vehicle?.MotStatusDescription),
-        dateMotDue: clean(vehicle?.DateMotDue),
-        dateMotDueParsed: clean(vehicle?.DateMotDueParsed),
-        daysLeftUntilMotDue: vehicle?.DaysLeftUntilMotDue ?? null,
+        motDueDate: clean(vehicle?.DateMotDue),
+        motDaysLeft: vehicle?.DaysLeftUntilMotDue ?? null,
         lastMotTestDate: clean(vehicle?.LastMotTestDate),
         motTestNumber: clean(vehicle?.MotTestNumber),
         mileageBetweenLastMotPasses: vehicle?.MileageBetweenLastMotPasses ?? null,
@@ -257,9 +255,8 @@ async getRccStandard(reg: string) {
         taxBand: clean(vehicle?.RoadTaxData?.Band),
         sixMonthRate: vehicle?.RoadTaxData?.SixMonthRate ?? null,
         twelveMonthRate: vehicle?.RoadTaxData?.TwelveMonthRate ?? null,
-        dateRoadTaxDue: clean(vehicle?.DateRoadTaxDue),
-        dateRoadTaxDueParsed: clean(vehicle?.DateRoadTaxDueParsed),
-        daysLeftUntilRoadTaxDue: vehicle?.DaysLeftUntilRoadTaxDue ?? null,
+        taxDueDate: clean(vehicle?.DateRoadTaxDue),
+        taxDaysLeft: vehicle?.DaysLeftUntilRoadTaxDue ?? null,
         isRoadTaxDue: vehicle?.IsRoadTaxDue ?? false,
         isRoadTaxNearExpiry: vehicle?.IsRoadTaxNearExpiry ?? false,
 
