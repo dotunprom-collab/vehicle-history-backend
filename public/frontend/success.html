@@ -1109,6 +1109,61 @@ insights:       raw.insights,
 }
 
 /* ── Risk ring ── */
+function renderBuyerVerdictHTML(bv) {
+  if (!bv) return '';
+
+  const verdictMap = {
+    SAFE_BUY:  { label: 'SAFE BUY',  fg: '#16a34a', soft: '#dcfce7' },
+    CAUTION:   { label: 'CAUTION',   fg: '#d97706', soft: '#fef3c7' },
+    HIGH_RISK: { label: 'HIGH RISK', fg: '#dc2626', soft: '#fee2e2' }
+  };
+  const m = verdictMap[bv.verdict];
+  if (!m) return '';
+
+  const headline = bv.headline || '';
+  const watchOuts = Array.isArray(bv.watchOuts) ? bv.watchOuts : [];
+  const pros = Array.isArray(bv.pros) ? bv.pros : [];
+  const action = bv.action || '';
+
+  const esc = (str) => String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  return `
+    <div class="ic" style="border-left:4px solid ${m.fg};margin-bottom:14px;animation-delay:.06s">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <span style="display:inline-block;padding:6px 14px;border-radius:14px;background:${m.soft};color:${m.fg};font-weight:700;font-size:11px;letter-spacing:1.2px">${m.label}</span>
+        ${headline ? `<span style="font-size:15px;color:var(--text);font-weight:500">${esc(headline)}</span>` : ''}
+      </div>
+      ${pros.length || watchOuts.length ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px">
+        ${pros.length ? `
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#16a34a;margin-bottom:6px;letter-spacing:.5px">WHAT LOOKS GOOD</div>
+          <ul style="margin:0;padding:0;list-style:none">
+            ${pros.map(p => `<li style="font-size:13px;color:var(--text);padding:3px 0 3px 16px;position:relative"><span style="position:absolute;left:0;color:#16a34a">•</span>${esc(p)}</li>`).join('')}
+          </ul>
+        </div>` : '<div></div>'}
+        ${watchOuts.length ? `
+        <div>
+          <div style="font-size:12px;font-weight:600;color:#dc2626;margin-bottom:6px;letter-spacing:.5px">WATCH-OUTS</div>
+          <ul style="margin:0;padding:0;list-style:none">
+            ${watchOuts.map(w => `<li style="font-size:13px;color:var(--text);padding:3px 0 3px 16px;position:relative"><span style="position:absolute;left:0;color:#dc2626">•</span>${esc(w)}</li>`).join('')}
+          </ul>
+        </div>` : '<div></div>'}
+      </div>` : ''}
+      ${action ? `
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Recommended action</div>
+        <div style="font-size:14px;color:var(--text);font-weight:500">${esc(action)}</div>
+      </div>` : ''}
+    </div>
+  `;
+}
+
 function riskRing(score) {
   const n = parseInt(score) || 0;
   const r = 35, circ = 2*Math.PI*r;
@@ -2189,22 +2244,7 @@ function renderReport(v, rawData) {
       </div>`).join('')}
   </div>
 
-  ${risk?`
-  <!-- RISK SCORE -->
-  <div class="risk-wrap" style="animation-delay:.06s">
-    <div class="ic-head">
-      <div class="ic-ico ${risk.chipCls.replace('chip-','')}">${ICO.warn}</div>
-      <div><div class="ic-title">Risk Assessment</div><div class="ic-sub">Automated vehicle history risk model</div></div>
-    </div>
-    <div class="risk-inner">
-      ${risk.html}
-      <div class="risk-info">
-        <div class="risk-title">${risk.label}</div>
-        <div class="risk-desc">Scored ${risk.n}/100 based on MOT patterns, keeper changes, mileage consistency and data cross-references.</div>
-        <div class="risk-chips"><span class="chip ${risk.chipCls}">Score: ${risk.n}/100</span></div>
-      </div>
-    </div>
-  </div>`:''}
+  ${renderBuyerVerdictHTML(rawData.buyerVerdict)}
 
   <!-- BACKGROUND CHECKS -->
   <div class="ic" style="margin-bottom:14px;animation-delay:.07s">
