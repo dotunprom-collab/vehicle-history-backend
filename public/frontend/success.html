@@ -1073,38 +1073,86 @@ function normalise(raw, fallbackReg) {
 
   return {
     registrationNumber: src.registrationNumber || src.reg || fallbackReg,
+
+    // Identity
     make: src.make, model: src.model, colour: src.colour,
+    originalColour: src.originalColour,
     yearOfManufacture: src.yearOfManufacture || src.year,
     engineCapacity: src.engineCapacity,
-    fuelType: src.fuelType || src.fuel, co2Emissions: src.co2Emissions || src.co2,
-    motStatus: src.motStatus, taxStatus: src.taxStatus,
-    taxDueDate: src.taxDueDate || src.taxDue, artEndDate: src.artEndDate,
-    motDaysLeft: src.motDaysLeft, taxDaysLeft: src.taxDaysLeft,
-    dateOfLastV5CIssued: src.dateOfLastV5CIssued,
+    fuelType: src.fuelType || src.fuel,
+    co2Emissions: src.co2Emissions || src.co2,
+    bodyStyle: src.bodyStyle,
+    vehicleType: src.vehicleType,
+    euroStatus: src.euroStatus,
+    insuranceGroup: src.insuranceGroup,
+    bhp: src.bhp, powerKw: src.powerKw, topSpeed: src.topSpeed,
+
+    // Registration & status
     monthOfFirstRegistration: src.monthOfFirstRegistration,
-    euroStatus: src.euroStatus, typeApproval: src.typeApproval,
-    wheelplan: src.wheelplan || src.wheelPlan, bodyStyle: src.bodyStyle,
+    dateOfLastV5CIssued: src.dateOfLastV5CIssued,
+    age: src.age,
+    isImported: src.isImported || false,
     markedForExport: src.markedForExport || false,
     isScrapped: src.isScrapped || false,
+    isVehicleSORN: src.isVehicleSORN || false,
+    colourChanges: src.colourChanges || 0,
+
+    // MOT detail
+    motStatus: src.motStatus,
+    motDueDate: src.motDueDate,
+    motDaysLeft: src.motDaysLeft,
+    artEndDate: src.artEndDate,
+    lastMotTestDate: src.lastMotTestDate,
+    motTestNumber: src.motTestNumber,
+    mileageBetweenLastMotPasses: src.mileageBetweenLastMotPasses,
+    mileageIssueIdentified: src.mileageIssueIdentified || false,
+    mileageIssueSummary: src.mileageIssueSummary,
+    isMotDue: src.isMotDue || false,
+    isMotNearExpiry: src.isMotNearExpiry || false,
+
+    // Tax detail
+    taxStatus: src.taxStatus,
+    taxBand: src.taxBand,
+    sixMonthRate: src.sixMonthRate,
+    taxAnnualRate: src.taxAnnualRate,
+    taxDueDate: src.taxDueDate || src.taxDue,
+    taxDaysLeft: src.taxDaysLeft,
+    isRoadTaxDue: src.isRoadTaxDue || false,
+    isRoadTaxNearExpiry: src.isRoadTaxNearExpiry || false,
+
+    // Mileage intelligence
+    averageMileage: src.averageMileage,
+    averageMileagePerYear: src.averageMileagePerYear,
+
+    // Keepers
+    numberPreviousKeepers: src.numberPreviousKeepers,
+    dateOfLastKeeperChange: src.dateOfLastKeeperChange,
     keeperHistory: src.keeperHistory || raw.keeperHistory || [],
+
+    // MOT history
     motResults: src.motHistory || src.motResults || raw.motHistory || [],
-    taxBand: src.taxBand, taxAnnualRate: src.taxAnnualRate,
-    averageMileage: src.averageMileage, revenueWeight: src.revenueWeight,
-    colourChanges: src.colourChanges || 0, isImported: src.isImported || false,
+
+    // Recalls
+    vehicleRecalls: raw.vehicleRecalls,
+
+    // Image
+    vehicleImageUrl: src.vehicleImageUrl,
+
+    // Fuel economy
+    fuelEconomyData: src.fuelEconomyData,
+
+    // Deprecated/legacy (kept for compat)
+    revenueWeight: src.revenueWeight,
+    typeApproval: src.typeApproval,
+    wheelplan: src.wheelplan || src.wheelPlan,
+
+    // VDG premium fields
     finance: raw.finance, stolen: raw.stolen, writeOff: raw.writeOff,
     riskScore: raw.riskScore, insights: raw.insights,
-
-    // ✅ VDG premium fields (from vehicle.service.ts)
-pnc:            raw.pnc            || null,
-miaftr:         raw.miaftr         || null,
-financeDetails: raw.financeDetails || null,
-vdg:            raw.vdg            || null,
-
-finance:        raw.finance,
-stolen:         raw.stolen,
-writeOff:       raw.writeOff,
-riskScore:      raw.riskScore,
-insights:       raw.insights,
+    pnc:            raw.pnc            || null,
+    miaftr:         raw.miaftr         || null,
+    financeDetails: raw.financeDetails || null,
+    vdg:            raw.vdg            || null,
   };
 }
 
