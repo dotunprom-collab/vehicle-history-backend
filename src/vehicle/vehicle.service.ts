@@ -211,14 +211,14 @@ async getRccStandard(reg: string) {
       vehicle: {
         reg,
 
-        // ── Identity ──
+       // ── Identity ──
         make: clean(vehicle?.Make) || 'Unknown',
         model: clean(vehicle?.Model) || 'Unknown',
-        year: clean(vehicle?.YearOfManufacture),
+        yearOfManufacture: clean(vehicle?.YearOfManufacture),
         colour: clean(vehicle?.Colour),
         originalColour: clean(vehicle?.OriginalColour),
-        colourChangesQuantity: vehicle?.ColourChangesQuantity ?? null,
-        fuel: clean(vehicle?.FuelType),
+        colourChanges: vehicle?.ColourChangesQuantity ?? null,
+        fuelType: clean(vehicle?.FuelType),
         engineCapacity: clean(vehicle?.CylinderCapacity),
         co2: vehicle?.Co2Emissions ?? null,
         bodyStyle: clean(vehicle?.BodyStyle),
@@ -229,12 +229,12 @@ async getRccStandard(reg: string) {
         powerKw: clean(vehicle?.PowerKw),
         topSpeed: clean(vehicle?.TopSpeed),
 
-        // ── Registration & status ──
+       // ── Registration & status ──
         monthOfFirstRegistration: clean(vehicle?.DateOfFirstRegistration),
         dateOfLastV5CIssued: clean(vehicle?.DateOfLastV5CIssued),
         age: clean(vehicle?.Age),
         isImported: vehicle?.IsImported ?? false,
-        exported: vehicle?.Exported ?? false,
+        markedForExport: vehicle?.Exported ?? false,
         isScrapped: vehicle?.IsScrapped ?? false,
         isVehicleSORN: vehicle?.IsVehicleSORN ?? false,
 
@@ -250,11 +250,11 @@ async getRccStandard(reg: string) {
         isMotDue: vehicle?.IsMOTDue ?? false,
         isMotNearExpiry: vehicle?.IsMOTNearExpiry ?? false,
 
-        // ── Tax detail ──
+       // ── Tax detail ──
         taxStatus: clean(vehicle?.RoadTaxStatusDescription),
         taxBand: clean(vehicle?.RoadTaxData?.Band),
         sixMonthRate: vehicle?.RoadTaxData?.SixMonthRate ?? null,
-        twelveMonthRate: vehicle?.RoadTaxData?.TwelveMonthRate ?? null,
+        taxAnnualRate: vehicle?.RoadTaxData?.TwelveMonthRate ?? null,
         taxDueDate: clean(vehicle?.DateRoadTaxDue),
         taxDaysLeft: vehicle?.DaysLeftUntilRoadTaxDue ?? null,
         isRoadTaxDue: vehicle?.IsRoadTaxDue ?? false,
