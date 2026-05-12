@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { Report } from '../reports/report.entity';
 import { Bundle } from '../bundle/bundle.entity';
 import { PaymentService } from '../payment/payment.service';
@@ -11,6 +10,7 @@ import { ConsumedSession } from '../payment/consumed-session.entity';
 import { logger } from '../logger';
 import { Inject, forwardRef } from '@nestjs/common';
 import { computeBuyerVerdict } from './buyer-verdict';
+import { Repository, MoreThan } from 'typeorm';
 
 @Injectable()
 export class VehicleService {
@@ -501,6 +501,86 @@ async getFullReport(
       email,
       tier: accessTier,
     });
+
+    // =========================
+    // 💾 24H CACHE LOOKUP (skip for free tier)
+    // =========================
+    const regUpper = reg.toUpperCase();
+    const cacheWindow = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    if (accessTier !== 'free') {
+      const cached = await this.reportRepo.findOne({
+        where: {
+          reg: regUpper,
+          status: 'paid',
+          createdAt: MoreThan(cacheWindow),
+        },
+        order: { createdAt: 'DESC' },
+      });
+
+      if (cached?.data?.vehicle) {
+        const cachedTier = (cached.pkg || '').toLowerCase();
+
+        // Cache hit: cached tier >= requested tier → return as-is
+        if (
+          (accessTier === 'standard' && (cachedTier === 'standard' || cachedTier === 'premium')) ||
+          (accessTier === 'premium' && cachedTier === 'premium')
+        ) {
+          logger.info({
+            event: 'CACHE_HIT_FULL',
+            reg: regUpper,
+            cachedTier,
+            requestedTier: accessTier,
+            ageMinutes: Math.round((Date.now() - cached.createdAt.getTime()) / 60000),
+          });
+          console.log('🔥 CACHE HIT FULL:', regUpper, cachedTier);
+          return cached.data;
+        }
+
+        // Standard → Premium upgrade: reuse cached vehicle/MOT data, only call VDG
+        if (accessTier === 'premium' && cachedTier === 'standard') {
+          logger.info({
+            event: 'CACHE_HIT_UPGRADE',
+            reg: regUpper,
+            ageMinutes: Math.round((Date.now() - cached.createdAt.getTime()) / 60000),
+          });
+          console.log('🔥 CACHE HIT UPGRADE:', regUpper);
+
+          const vdg = await this.getVDGData(reg);
+          const upgraded = {
+            ...cached.data,
+            tier: 'premium',
+            finance: this.extractFinance(vdg),
+            stolen: this.extractStolen(vdg),
+            writeOff: this.extractWriteOff(vdg),
+          };
+
+          upgraded.buyerVerdict = computeBuyerVerdict({
+            tier: 'premium',
+            riskScore: upgraded.riskScore,
+            writeOff: upgraded.writeOff,
+            finance: upgraded.finance,
+            stolen: upgraded.stolen,
+            vehicle: upgraded.vehicle,
+            motHistory: upgraded.motHistory,
+            keeperHistory: upgraded.keeperHistory,
+            vehicleRecalls: upgraded.vehicleRecalls,
+            insights: upgraded.insights,
+          });
+
+          await this.reportRepo.save({
+            reg: regUpper,
+            userId: email || 'guest',
+            data: upgraded,
+            status: 'paid',
+            pkg: 'premium',
+          });
+
+          return upgraded;
+        }
+      }
+    }
+
     // =========================
     // 🚦 TIER ROUTING
     // =========================
@@ -580,7 +660,7 @@ async getFullReport(
     // 💾 SAVE REPORT
     // =========================
     await this.reportRepo.save({
-      reg,
+      reg: regUpper,
       userId: email || 'guest',
       data: report,
       status: 'paid',
