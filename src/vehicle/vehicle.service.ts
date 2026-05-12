@@ -520,6 +520,7 @@ async getFullReport(
         vehicle: report?.vehicle,
         motHistory: report?.motHistory,
         keeperHistory: report?.keeperHistory,
+        vehicleRecalls: report?.vehicleRecalls,
         insights: report?.insights,
       });
 
@@ -566,6 +567,7 @@ async getFullReport(
         vehicle: report.vehicle,
         motHistory: report.motHistory,
         keeperHistory: report.keeperHistory,
+        vehicleRecalls: report.vehicleRecalls,
         insights: report.insights,
       });
     }

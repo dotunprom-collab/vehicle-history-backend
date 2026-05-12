@@ -10,6 +10,7 @@ interface VerdictInput {
   vehicle?: any;
   motHistory?: any[];
   keeperHistory?: any[];
+  vehicleRecalls?: any;
   insights?: any[];
 }
 
@@ -53,6 +54,13 @@ function recentKeeperTurnover(keeperHistory: any[]): boolean {
   return monthsAgo < 6;
 }
 
+function recallCount(recalls: any): number {
+  if (!recalls) return 0;
+  if (Array.isArray(recalls)) return recalls.length;
+  if (Array.isArray(recalls?.RecallRecordList)) return recalls.RecallRecordList.length;
+  return 0;
+}
+
 export function computeBuyerVerdict(input: VerdictInput): BuyerVerdict {
   const {
     tier,
@@ -63,18 +71,24 @@ export function computeBuyerVerdict(input: VerdictInput): BuyerVerdict {
     vehicle = {},
     motHistory = [],
     keeperHistory = [],
+    vehicleRecalls,
     insights = [],
   } = input;
 
   const score = typeof riskScore === 'number' ? riskScore : parseInt(String(riskScore || 0)) || 0;
   const advCount = countAdvisories(motHistory);
   const passRate = motPassRate(motHistory);
-  const mileageAnomaly = hasMileageAnomaly(motHistory);
+  // Mileage anomaly: local MOT scan OR upstream API flag
+  const mileageAnomaly = hasMileageAnomaly(motHistory) || !!vehicle.mileageIssueIdentified;
   const keeperCount = keeperHistory.length;
   const recentTurnover = recentKeeperTurnover(keeperHistory);
+  const recalls = recallCount(vehicleRecalls);
+  const colourChanges = parseInt(String(vehicle.colourChanges || 0)) || 0;
 
   const isExported = !!(vehicle.markedForExport || vehicle.Exported || vehicle.exportStatus);
   const isScrapped = !!(vehicle.isScrapped || vehicle.IsScrapped);
+  const isImported = !!(vehicle.isImported || vehicle.IsImported);
+  const isSORN = !!(vehicle.isVehicleSORN || vehicle.IsVehicleSORN);
 
   const writeOffFlagged = isFlagged(writeOff);
   const financeFlagged = tier === 'premium' && isFlagged(finance);
@@ -108,6 +122,10 @@ export function computeBuyerVerdict(input: VerdictInput): BuyerVerdict {
   if (advCount >= 15) cautionReasons.push(`${advCount} MOT advisories`);
   if (mileageAnomaly) cautionReasons.push('mileage anomaly detected');
   if (recentTurnover) cautionReasons.push('current keeper tenure under 6 months');
+  if (isImported) cautionReasons.push('imported vehicle');
+  if (isSORN) cautionReasons.push('vehicle is SORN-declared');
+  if (recalls > 0) cautionReasons.push(`${recalls} outstanding recall${recalls > 1 ? 's' : ''}`);
+  if (colourChanges >= 2) cautionReasons.push(`colour changed ${colourChanges} times`);
 
   // ── Pros ──
   const pros: string[] = [];
@@ -115,7 +133,8 @@ export function computeBuyerVerdict(input: VerdictInput): BuyerVerdict {
   else if (passRate >= 0.85 && motHistory.length > 0) pros.push(`Strong MOT history (${Math.round(passRate * 100)}% pass rate)`);
   if (!mileageAnomaly && motHistory.length >= 3) pros.push('Consistent mileage progression');
   if (keeperCount > 0 && keeperCount <= 2) pros.push('Low keeper turnover');
-  if (!isExported && !isScrapped) pros.push('Active UK registration');
+  if (!isExported && !isScrapped && !isImported && !isSORN) pros.push('Active UK registration');
+  if (recalls === 0 && vehicleRecalls !== undefined) pros.push('No outstanding manufacturer recalls');
   if (tier === 'premium' && !financeFlagged && finance !== undefined) pros.push('No outstanding finance');
   if (tier === 'premium' && !stolenFlagged && stolen !== undefined) pros.push('Not reported stolen');
 
@@ -126,13 +145,17 @@ export function computeBuyerVerdict(input: VerdictInput): BuyerVerdict {
   if (stolenFlagged) watchOuts.push('Stolen marker on Police National Computer');
   if (isScrapped) watchOuts.push('DVLA marked as scrapped — verify roadworthiness');
   if (isExported) watchOuts.push('Marked for export — confirm vehicle is still in UK');
+  if (isImported) watchOuts.push('Imported vehicle — verify history with original-market records');
+  if (isSORN) watchOuts.push('Vehicle is declared off-road (SORN) — confirm reason before driving');
+  if (recalls > 0) watchOuts.push(`${recalls} outstanding manufacturer recall${recalls > 1 ? 's' : ''} — check whether work has been completed`);
+  if (colourChanges >= 2) watchOuts.push(`Colour changed ${colourChanges} times — investigate respray history`);
   if (mileageAnomaly) watchOuts.push('Possible mileage discrepancy in MOT records');
   if (advCount >= 15) watchOuts.push(`${advCount} MOT advisories — review for recurring issues`);
   if (keeperCount >= 5) watchOuts.push(`${keeperCount} previous keepers — investigate ownership history`);
   if (recentTurnover) watchOuts.push('Current keeper has held vehicle less than 6 months');
   if (criticalCount >= 1) watchOuts.push(`${criticalCount} critical finding${criticalCount > 1 ? 's' : ''} detected`);
   if (highCount >= 1 && criticalCount === 0) watchOuts.push(`${highCount} high-priority finding${highCount > 1 ? 's' : ''} detected`);
-
+  
   // ── Decide verdict ──
   let verdict: VerdictLevel;
   let headline: string;
