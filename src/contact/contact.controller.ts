@@ -9,6 +9,8 @@ export class ContactController {
   @Post('submit')
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 per hour per IP
   async submit(@Body() body: any) {
+    body = body || {};
+
     // Honeypot — bots fill this in, humans don't
     if (body.website) {
       console.log('🐛 Honeypot triggered — silent reject');
