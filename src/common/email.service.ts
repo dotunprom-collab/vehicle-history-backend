@@ -336,4 +336,58 @@ if (isStandard) {
       throw err;
     }
   }
+
+  async sendContactMessage({
+    fname,
+    lname,
+    fromEmail,
+    subject,
+    reg,
+    message,
+  }: {
+    fname: string;
+    lname: string;
+    fromEmail: string;
+    subject: string;
+    reg?: string;
+    message: string;
+  }) {
+    const subjectLabels: Record<string, string> = {
+      report: 'Question about report',
+      payment: 'Payment or billing',
+      refund: 'Refund request',
+      data: 'Data accuracy',
+      technical: 'Technical problem',
+      other: 'Other',
+    };
+    const subjectLabel = subjectLabels[subject] || subject;
+    const fullName = [fname, lname].filter(Boolean).join(' ');
+
+    try {
+      await this.resend.emails.send({
+        from: 'CheapRegCheck Contact <noreply@cheapregcheck.com>',
+        to: 'support@cheapregcheck.com',
+        replyTo: fromEmail,
+        subject: `[Contact] ${subjectLabel} — ${fullName}`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;color:#111827;">
+            <h2 style="font-size:18px;margin:0 0 16px 0;">New contact form submission</h2>
+            <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;">
+              <tr><td style="padding:6px 0;color:#6b7280;width:130px;">Name</td><td style="padding:6px 0;font-weight:600;">${fullName || '—'}</td></tr>
+              <tr><td style="padding:6px 0;color:#6b7280;">Email</td><td style="padding:6px 0;font-weight:600;"><a href="mailto:${fromEmail}">${fromEmail}</a></td></tr>
+              <tr><td style="padding:6px 0;color:#6b7280;">Subject</td><td style="padding:6px 0;font-weight:600;">${subjectLabel}</td></tr>
+              ${reg ? `<tr><td style="padding:6px 0;color:#6b7280;">Registration</td><td style="padding:6px 0;font-weight:600;font-family:'Courier New',monospace;">${reg}</td></tr>` : ''}
+            </table>
+            <h3 style="font-size:14px;margin:0 0 8px 0;color:#525252;">Message</h3>
+            <div style="background:#f3f4f6;border-left:3px solid #16a34a;padding:14px 18px;white-space:pre-wrap;font-size:14px;line-height:1.6;">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+            <p style="margin:24px 0 0 0;font-size:12px;color:#9ca3af;">Reply directly to this email to respond to ${fullName || 'the customer'}.</p>
+          </div>
+        `,
+      });
+      console.log('✅ CONTACT EMAIL SENT', { from: fromEmail, subject: subjectLabel });
+    } catch (err) {
+      console.error('❌ CONTACT EMAIL FAILED', err);
+      throw err;
+    }
+  }
 }

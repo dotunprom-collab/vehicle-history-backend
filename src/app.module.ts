@@ -6,6 +6,7 @@ import { join } from 'path';
 
 import { VehicleController, HealthController } from './vehicle/vehicle.controller';
 import { PaymentController } from './payment/payment.controller';
+import { ContactController } from './contact/contact.controller';
 
 import { VehicleService } from './vehicle/vehicle.service';
 import { PaymentService } from './payment/payment.service';
@@ -57,6 +58,7 @@ import { AuthModule } from './auth/auth.module';
     VehicleController,
     PaymentController,
     HealthController,
+    ContactController,
   ],
 
   providers: [
