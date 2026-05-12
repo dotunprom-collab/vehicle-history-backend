@@ -1179,47 +1179,6 @@ nav.scrolled{box-shadow:0 1px 24px rgba(0,0,0,.08);}
     </div>
   </div>
 
-  <!-- STANDARD LOCK (MOT + Mileage + Keeper) -->
-  <div class="lock-gate" id="standardLock">
-    <div class="lock-phantom">
-      <div class="g2">
-        <div class="ic" style="border:none;box-shadow:none;">
-          <div class="ic-head">
-            <div class="ic-ico b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-            <div><div class="ic-title">MOT History</div><div class="ic-sub">DVSA records</div></div>
-          </div>
-          <div class="ic-rows">
-            <div class="dr"><span class="dr-l">Last MOT result</span><span class="dr-r">██████</span></div>
-            <div class="dr"><span class="dr-l">Last mileage</span><span class="dr-r">██████</span></div>
-            <div class="dr"><span class="dr-l">Advisory count</span><span class="dr-r">██████</span></div>
-          </div>
-        </div>
-        <div class="ic" style="border:none;box-shadow:none;">
-          <div class="ic-head">
-            <div class="ic-ico p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-            <div><div class="ic-title">Keeper History</div><div class="ic-sub">DVLA ownership records</div></div>
-          </div>
-          <div class="ic-rows">
-            <div class="dr"><span class="dr-l">Number of keepers</span><span class="dr-r">██████</span></div>
-            <div class="dr"><span class="dr-l">Last transfer</span><span class="dr-r">██████</span></div>
-            <div class="dr"><span class="dr-l">V5C issued</span><span class="dr-r">██████</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="lock-veil">
-      <div class="lock-circle">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-      </div>
-      <div class="lock-h">Standard &amp; Premium data locked</div>
-      <div class="lock-p">Unlock full MOT history, mileage trends, keeper records, finance &amp; theft checks</div>
-      <button class="lock-btn" onclick="openModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-        Unlock full report — from £5.99
-      </button>
-    </div>
-  </div>
-
   <!-- PREMIUM UPSELL — only renders when userTier === 'standard' -->
   <div class="premium-upsell" id="premiumUpsell" style="display:none;">
     <div class="pu-header">
@@ -1921,7 +1880,6 @@ function renderFreeData(v) {
 
   // ── Reveal sections ──
   document.getElementById('freeCarBanner').style.display = 'block';
-  document.getElementById('standardLock').style.display  = 'block';
 }
 
 /* ── normalise any backend/DVLA response shape into the DVLA field-name format ── */
@@ -2206,26 +2164,7 @@ console.log(
 
     /* ── ONLY SHOW STANDARD DATA TO PAID USERS ── */
 
-    const tier = inferTier(raw);
-
-    if (tier === 'standard' || tier === 'premium') {
-
-  document.getElementById('standardLock').style.display = 'none';
-
-  renderStandardData({
-    vehicle: dvlaData,
-    motHistory: Array.isArray(motHistory) ? motHistory : [],
-    keeperHistory: Array.isArray(keeperHistory) ? keeperHistory : []
-  });
-
-} else {
-
-  const lock = document.getElementById('standardLock');
-
-  if (lock) {
-    lock.style.display = 'block';
-  }
-}
+    // result.html is free-preview only — paid users land on success.html
 
     } catch(err) {
     console.error('[CRC] loadData error:', err);
@@ -2251,93 +2190,6 @@ console.log(
 }
 
 function loadFreeCheck() { /* free data auto-loads */ }
-
-/* ── RENDER STANDARD/PREMIUM DATA ── */
-function renderStandardData(data) {
-  const v = data.vehicle;
-  // Insert MOT section
-  const motHtml = buildMotTimeline(data.motHistory||[]);
-  const keeperHtml = buildKeeperHistory(v.keeperHistory||data.keeperHistory||[]);
-
-  // Replace lock gate with actual data
-  const lockGate = document.getElementById('standardLock');
-  lockGate.outerHTML = `
-    <div class="g2">
-      <div class="ic" style="animation-delay:.12s">
-        <div class="ic-head">
-          <div class="ic-ico b"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-          <div><div class="ic-title">MOT History</div><div class="ic-sub">DVSA official records</div></div>
-        </div>
-        <div class="mot-timeline">${motHtml}</div>
-      </div>
-      <div class="ic" style="animation-delay:.16s">
-        <div class="ic-head">
-          <div class="ic-ico p"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-          <div><div class="ic-title">Keeper History</div><div class="ic-sub">DVLA ownership records</div></div>
-        </div>
-        <div class="ic-rows">${keeperHtml}</div>
-      </div>
-    </div>
-  `;
-}
-
-function buildMotTimeline(motTests) {
-  if(!motTests.length) return '<div class="dr"><span class="dr-l">No MOT records found</span></div>';
-  return motTests.slice(0,6).map((t,i) => {
-    const date = fmtDate(t.DateOfTest||t.date);
-    const passed = t.Result||t.result||t.ResultText||'PASS';
-    const miles = t.OdometerModel?.OdometerReading||t.mileage;
-    const adv = t.AdvisoryNotices_V2||t.AdvisoryNotices||t.advisories||[];
-    const isPass = String(passed).toLowerCase().includes('pass')||passed===true;
-    const advCount = adv.length;
-    let advHtml = '';
-    if(advCount>0) {
-      const advItems = adv.map(a=>`<div class="mot-adv-item">• ${(a.Text||a.text||a).replace(/ \(.*?\)/g,'')}</div>`).join('');
-      advHtml = `
-        <button class="mot-adv-toggle" onclick="toggleAdv(this)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg>
-          ${advCount} advisor${advCount>1?'ies':'y'}
-        </button>
-        <div class="mot-advisories">${advItems}</div>
-      `;
-    }
-    return `
-      <div class="mot-entry">
-        <div class="mot-dot ${isPass?'pass':'fail'}"></div>
-        <div class="mot-info">
-          <div class="mot-date">${date} — <span style="color:${isPass?'var(--green)':'var(--red)'};font-weight:700;">${isPass?'PASS':'FAIL'}</span></div>
-          ${miles?`<div class="mot-miles">${Number(miles).toLocaleString()} miles</div>`:''}
-          ${advHtml}
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function buildKeeperHistory(keepers) {
-  if(!keepers.length) return '<div class="dr"><span class="dr-l">No keeper records available</span></div>';
-  return keepers.map((k,i)=>{
-    const num = k.NumberPreviousKeepers||k.number||(keepers.length-i);
-    const date = fmtDate(k.DateOfLastKeeperChange||k.date);
-    return `
-      <div class="keeper-row">
-        <div class="keeper-num">${num}</div>
-        <div class="keeper-info">
-          <div class="keeper-label">Keeper ${num}</div>
-          <div class="keeper-date">Transfer: ${date}</div>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function toggleAdv(btn) {
-  const el = btn.nextElementSibling;
-  el.classList.toggle('open');
-  btn.innerHTML = el.classList.contains('open')
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><polyline points="18 15 12 9 6 15"/></svg> Hide advisories'
-    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12"><polyline points="6 9 12 15 18 9"/></svg> ${el.querySelectorAll('.mot-adv-item').length} advisor${el.querySelectorAll('.mot-adv-item').length>1?'ies':'y'}`;
-}
 
 /* ─────────────────────────────
    PAYMENT
