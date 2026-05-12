@@ -1394,19 +1394,26 @@ async generatePdfBuffer(
     // Two columns: Vehicle Details + Tax & Registration
     const detailColW = (PAGE.contentWidth - 16) / 2;
 
-    // ── LEFT: Vehicle Details
+    // ── LEFT: Vehicle Identity
     const leftSpecs: [string, any][] = [
       ['Registration', v.reg || reg],
       ['Make', v.make],
       ['Model', v.model],
       ['Colour', v.colour],
-      ['Year', v.year],
-      ['Fuel type', v.fuel],
+      ['Body style', v.bodyStyle],
+      ['Year', v.yearOfManufacture || v.year],
       ['Engine', v.engineCapacity ? `${cleanCc(v.engineCapacity)} cc` : null],
+      ['Fuel type', v.fuelType || v.fuel],
       ['CO2 emissions', v.co2 ? `${v.co2} g/km` : null],
+      ['Mileage', v.averageMileage ? `${Number(v.averageMileage).toLocaleString('en-GB')} mi` : null],
+      ['Avg/year', v.averageMileagePerYear ? `${Number(v.averageMileagePerYear).toLocaleString('en-GB')} mi/yr` : null],
     ];
-    if (isPremium) {
-      leftSpecs.push(['Body style', v.bodyStyle]);
+    if (v.isImported) {
+      leftSpecs.push(['Imported', 'Yes']);
+    }
+    const colourChanges = parseInt(String(v.colourChanges || 0)) || 0;
+    if (colourChanges >= 2) {
+      leftSpecs.push(['Colour changes', String(colourChanges)]);
     }
 
     const leftCardH = 50 + leftSpecs.length * 32;
@@ -1439,14 +1446,21 @@ text('Vehicle Identity', PAGE.margin + 16, cursorY + 16, { font: F.sansBold, siz
     if (v.taxDaysLeft !== undefined && v.taxDaysLeft !== null) {
       rightSpecs.push(['Tax days left', `${v.taxDaysLeft} days`]);
     }
+    if (v.taxBand) {
+      const annual = v.taxAnnualRate ? ` — £${v.taxAnnualRate}/yr` : '';
+      rightSpecs.push(['Tax band', `Band ${v.taxBand}${annual}`]);
+    }
+    if (v.monthOfFirstRegistration) {
+      rightSpecs.push(['First registered', v.monthOfFirstRegistration]);
+    }
+    if (v.dateOfLastV5CIssued) {
+      rightSpecs.push(['Last V5C', fmtDate(v.dateOfLastV5CIssued)]);
+    }
     if (v.lastMotTestDate) {
       rightSpecs.push(['Last MOT', fmtDate(v.lastMotTestDate)]);
     }
-    if (isPremium) {
-      if (v.taxBand) rightSpecs.push(['Tax band', `Band ${v.taxBand}`]);
-      if (v.annualTax) rightSpecs.push(['Annual tax', `£${v.annualTax}`]);
-      if (v.averageMileage) rightSpecs.push(['Latest odometer', `${Number(v.averageMileage).toLocaleString('en-GB')} mi`]);
-    }
+    rightSpecs.push(['Exported', v.markedForExport ? 'Yes' : 'No', v.markedForExport ? 'warn' : 'ok']);
+    rightSpecs.push(['Scrapped', v.isScrapped ? 'Yes' : 'No', v.isScrapped ? 'warn' : 'ok']);
     if (rightSpecs.length === 0) {
       rightSpecs.push(['Status', 'Not available']);
     }
