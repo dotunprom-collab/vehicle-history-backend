@@ -446,6 +446,8 @@ footer{
       <p class="form-sub">Fill in the form and we'll get back to you shortly.</p>
 
       <div id="formBody">
+        <!-- Honeypot — must stay hidden -->
+        <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;" aria-hidden="true"/>
         <div class="field-row">
           <div class="field">
             <label>First name</label>
@@ -537,20 +539,51 @@ footer{
 </footer>
 
 <script>
-function sendMessage() {
+const API = window.location.hostname === "localhost"
+  ? "http://localhost:8080"
+  : "https://vehicle-history-backend-production.up.railway.app";
+
+async function sendMessage() {
   const fname   = document.getElementById('fname').value.trim();
+  const lname   = document.getElementById('lname').value.trim();
   const email   = document.getElementById('email').value.trim();
   const subject = document.getElementById('subject').value;
+  const reg     = document.getElementById('reg').value.trim();
   const message = document.getElementById('message').value.trim();
+  const website = document.getElementById('website').value; // honeypot
 
   if(!fname) { alert('Please enter your first name.'); return; }
   if(!email || !email.includes('@')) { alert('Please enter a valid email address.'); return; }
   if(!subject) { alert('Please select a subject.'); return; }
-  if(!message) { alert('Please write a message.'); return; }
+  if(!message || message.length < 5) { alert('Please write a message (at least 5 characters).'); return; }
 
-  // Show success state
-  document.getElementById('formBody').style.display = 'none';
-  document.getElementById('formSuccess').style.display = 'block';
+  const btn = document.querySelector('.submit-btn');
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  btn.textContent = 'Sending...';
+
+  try {
+    const res = await fetch(API + '/contact/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fname, lname, email, subject, reg, message, website }),
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.message || 'Server error');
+    }
+
+    // Success
+    document.getElementById('formBody').style.display = 'none';
+    document.getElementById('formSuccess').style.display = 'block';
+  } catch (err) {
+    console.error('Contact form error:', err);
+    alert('Sorry, your message could not be sent. Please try again or email support@cheapregcheck.com directly.');
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send message';
+  }
 }
 </script>
 <script src="/partials/nav-loader.js" defer></script>
